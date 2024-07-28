@@ -182,7 +182,7 @@ class _SearchScreenState extends State<SearchScreen> {
         : Container();
   }
   
-  Future toggleGroupJoin(
+  Future joinGroup(
       String userName, String groupName, String groupId) async {
     if (user == null) {
       throw Exception("No user is signed in");
@@ -197,31 +197,9 @@ class _SearchScreenState extends State<SearchScreen> {
     DocumentSnapshot groupdocumentSnapshot = await groupDocumentReference.get();
 
     List<dynamic> groups = userdocumentSnapshot['groups'];
-    List<dynamic> members = groupdocumentSnapshot['members'];
-
-    // Check if the user is the admin
-    bool isAdmin = groupdocumentSnapshot['admin'] == '${user!.uid}_$userName';
-
+    
     await FirebaseFirestore.instance.runTransaction((transaction) async {
-      if (groups.contains('${groupId}_$groupName')) {
-        // if (isAdmin) {
-        //   // Assign a new admin if the current user is the admin
-        //   if (members.length > 1) {
-        //     String newAdmin = members
-        //         .firstWhere((member) => member != '${user!.uid}_$userName');
-        //     transaction.update(groupDocumentReference, {'admin': newAdmin});
-        //   } else {
-        //     transaction.update(groupDocumentReference, {'admin': null});
-        //   }
-        // }
-        // transaction.update(userDocumentReference, {
-        //   'groups': FieldValue.arrayRemove(['${groupId}_$groupName']),
-        // });
-        // transaction.update(groupDocumentReference, {
-        //   'members': FieldValue.arrayRemove(['${user!.uid}_$userName']),
-        // });
-      } 
-      else {
+      if (!groups.contains('${groupId}_$groupName')) {
         if(groupdocumentSnapshot['admin'] == null){
           transaction.update(groupDocumentReference, {'admin': '${user!.uid}_$userName'});
         }
@@ -231,7 +209,7 @@ class _SearchScreenState extends State<SearchScreen> {
         transaction.update(groupDocumentReference, {
           'members': FieldValue.arrayUnion(['${user!.uid}_$userName']),
         });
-      }
+      } 
     });
   }
 
@@ -308,7 +286,7 @@ class _SearchScreenState extends State<SearchScreen> {
               )
             : InkWell(
                 onTap: () async {
-                  await toggleGroupJoin(userName, groupName, groupId);
+                  await joinGroup(userName, groupName, groupId);
                   setState(() {
                     isJoined = !isJoined;
                   });

@@ -76,7 +76,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     return res.substring(0, res.indexOf("_"));
   }
 
-  Future toggleGroupJoin(
+  Future leaveGroup(
       String userName, String groupName, String groupId) async {
     if (user == null) {
       throw Exception("No user is signed in");
@@ -114,13 +114,6 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
         transaction.update(groupDocumentReference, {
           'members': FieldValue.arrayRemove(['${user!.uid}_$userName']),
         });
-      } else {
-        transaction.update(userDocumentReference, {
-          'groups': FieldValue.arrayUnion(['${groupId}_$groupName']),
-        });
-        transaction.update(groupDocumentReference, {
-          'members': FieldValue.arrayUnion(['${user!.uid}_$userName']),
-        });
       }
     });
   }
@@ -157,7 +150,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                           ElevatedButton(
                             onPressed: () async {
                               Navigator.of(context).pop();
-                              await toggleGroupJoin(
+                              await leaveGroup(
                                   userName, widget.groupName, widget.groupId);
 
                               Navigator.of(context).pushReplacement(
