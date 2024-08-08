@@ -1,5 +1,4 @@
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
-import 'package:chatter_box/screens/home.dart';
 import 'package:chatter_box/widgets/input_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
@@ -45,8 +44,9 @@ class _AuthScreenState extends State<AuthScreen> {
             email: _enteredEmail,
             password: _enteredPassword,
           );
-          Navigator.of(context)
-              .push(MaterialPageRoute(builder: (ctx) => const HomeScreen()));
+          setState(() {
+            _isAuthenticating = false;
+          });
         } on FirebaseAuthException catch (error) {
           _showErrorDialog(error.message ?? 'Authentication failed.');
         }
@@ -57,7 +57,6 @@ class _AuthScreenState extends State<AuthScreen> {
             email: _enteredEmail,
             password: _enteredPassword,
           );
-
           await FirebaseFirestore.instance
               .collection('users')
               .doc(userCredentials.user!.uid)

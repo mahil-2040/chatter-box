@@ -4,14 +4,17 @@ import 'package:chatter_box/screens/spalsh.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:chatter_box/firebase_options.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+    options: DefaultFirbaseOptions.currentPlatform,
   );
   runApp(const App());
+  FlutterNativeSplash.remove();
 }
 
 class App extends StatelessWidget {

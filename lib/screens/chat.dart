@@ -1,4 +1,6 @@
 import 'package:chatter_box/screens/group_info.dart';
+import 'package:chatter_box/widgets/chat_message.dart';
+import 'package:chatter_box/widgets/new_message.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -13,6 +15,7 @@ class ChatScreen extends StatefulWidget {
   final String userName;
   final String groupName;
   final String groupId;
+
   @override
   State<ChatScreen> createState() {
     return _ChatScreenState();
@@ -30,27 +33,27 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   getChatandAdmin() {
-    getChats(widget.groupId).then((val){
-      setState(() {
-        chats = val;
-      });
-    });
+    // getChats(widget.groupId).then((val) {
+    //   setState(() {
+    //     chats = val;
+    //   });
+    // });
 
-    getGroupAdmin(widget.groupId).then((val){
+    getGroupAdmin(widget.groupId).then((val) {
       setState(() {
         admin = val;
       });
-    });    
+    });
   }
 
-  getChats(String groupId) async {
-    return FirebaseFirestore.instance
-        .collection('groups')
-        .doc(groupId)
-        .collection('messages')
-        .orderBy('time')
-        .snapshots();
-  }
+  // getChats(String groupId) async {
+  //   return FirebaseFirestore.instance
+  //       .collection('groups')
+  //       .doc(groupId)
+  //       .collection('messages')
+  //       .orderBy('time')
+  //       .snapshots();
+  // }
 
   Future getGroupAdmin(String groupId) async {
     DocumentReference d =
@@ -62,12 +65,47 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 27, 32, 45),
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 107, 114, 128),
-        centerTitle: true,
+        leading: Row(
+          
+          children: [
+            IconButton(
+            icon: const Icon(Icons.arrow_back), // Back button icon
+            onPressed: () {
+              Navigator.of(context).pop(); // Go back to the previous screen
+            },
+          ),
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: const Color.fromARGB(255, 41, 47, 63),
+              child: Text(
+                widget.groupName.isNotEmpty
+                    ? widget.groupName[0].toUpperCase()
+                    : '',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
+              ),
+            ),
+            // const SizedBox(width: 48),
+          ],
+        ),
+        automaticallyImplyLeading: false,
+        iconTheme: const IconThemeData(
+          color: Colors.white,
+        ),
+        backgroundColor: const Color.fromARGB(255, 27, 32, 45),
+        // centerTitle: true,
         title: Text(
           widget.groupName,
-          style: const TextStyle(fontWeight: FontWeight.bold,),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         actions: [
           IconButton(
@@ -82,12 +120,27 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               );
             },
-            icon: const Icon(Icons.info),
+            icon: const Icon(
+              Icons.info,
+              color: Colors.white,
+              size: 30,
+            ),
           ),
         ],
       ),
       body: Center(
-        child: Text(widget.groupName),
+        child: Column(
+          children: [
+            Expanded(
+              child: ChatMessage(
+                groupId: widget.groupId,
+              ),
+            ),
+            NewMessage(
+              groupId: widget.groupId,
+            ),
+          ],
+        ),
       ),
     );
   }

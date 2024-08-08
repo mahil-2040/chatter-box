@@ -61,12 +61,14 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 27, 32, 45),
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 107, 114, 128),
-        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: const Color.fromARGB(255, 27, 32, 45),
         title: const Text(
           'Search',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28),
+          style: TextStyle(
+              fontWeight: FontWeight.bold, fontSize: 28, color: Colors.white),
         ),
       ),
       body: Padding(
@@ -77,7 +79,7 @@ class _SearchScreenState extends State<SearchScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(30),
-                color: const Color.fromARGB(255, 107, 114, 128),
+                  color: const Color.fromARGB(255, 41, 47, 63),
               ),
               child: Row(
                 children: [
@@ -181,9 +183,8 @@ class _SearchScreenState extends State<SearchScreen> {
           )
         : Container();
   }
-  
-  Future joinGroup(
-      String userName, String groupName, String groupId) async {
+
+  Future joinGroup(String userName, String groupName, String groupId) async {
     if (user == null) {
       throw Exception("No user is signed in");
     }
@@ -197,11 +198,12 @@ class _SearchScreenState extends State<SearchScreen> {
     DocumentSnapshot groupdocumentSnapshot = await groupDocumentReference.get();
 
     List<dynamic> groups = userdocumentSnapshot['groups'];
-    
+
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       if (!groups.contains('${groupId}_$groupName')) {
-        if(groupdocumentSnapshot['admin'] == null){
-          transaction.update(groupDocumentReference, {'admin': '${user!.uid}_$userName'});
+        if (groupdocumentSnapshot['admin'] == null) {
+          transaction.update(
+              groupDocumentReference, {'admin': '${user!.uid}_$userName'});
         }
         transaction.update(userDocumentReference, {
           'groups': FieldValue.arrayUnion(['${groupId}_$groupName']),
@@ -209,7 +211,7 @@ class _SearchScreenState extends State<SearchScreen> {
         transaction.update(groupDocumentReference, {
           'members': FieldValue.arrayUnion(['${user!.uid}_$userName']),
         });
-      } 
+      }
     });
   }
 
@@ -231,98 +233,100 @@ class _SearchScreenState extends State<SearchScreen> {
       ..showSnackBar(snackBar);
   }
 
-  Widget groupTile(String userName, String groupName, String groupId, String? admin) {
-  return FutureBuilder<bool>(
-    future: isUserJoined(userName, groupName, groupId),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const ListTile(
-          title: Text('Loading...'),
-        );
-      }
+  Widget groupTile(
+      String userName, String groupName, String groupId, String? admin) {
+    return FutureBuilder<bool>(
+      future: isUserJoined(userName, groupName, groupId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const ListTile(
+            title: Text('Loading...'),
+          );
+        }
 
-      if (snapshot.hasError) {
-        return const ListTile(
-          title: Text('Error loading group'),
-        );
-      }
+        if (snapshot.hasError) {
+          return const ListTile(
+            title: Text('Error loading group'),
+          );
+        }
 
-      bool isJoined = snapshot.data ?? false;
+        bool isJoined = snapshot.data ?? false;
 
-      return ListTile(
-        contentPadding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        leading: CircleAvatar(
-          radius: 30,
-          backgroundColor: const Color.fromARGB(255, 107, 114, 128),
-          child: Text(
-            groupName.isNotEmpty ? groupName[0].toUpperCase() : '',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 22,
+        return ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+          leading: CircleAvatar(
+            radius: 30,
+            backgroundColor: const Color.fromARGB(255, 41, 47, 63),
+            child: Text(
+              groupName.isNotEmpty ? groupName[0].toUpperCase() : '',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+              ),
             ),
           ),
-        ),
-        title: Text(
-          groupName,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: admin == null || admin.isEmpty
-            ? const Text('No members in the group')
-            : Text('Admin: ${getName(admin)}'),
-        trailing: isJoined
-            ? Container(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white, width: 1),
-                  borderRadius: BorderRadius.circular(10),
-                  color: Colors.black,
-                ),
-                child: const Text(
-                  'Joined',
-                  style: TextStyle(color: Colors.white),
-                ),
-              )
-            : InkWell(
-                onTap: () async {
-                  await joinGroup(userName, groupName, groupId);
-                  setState(() {
-                    isJoined = !isJoined;
-                  });
-                  _showErrorDialog(
-                    'Successfully joined the group $groupName',
-                    'Joined',
-                    const Color.fromARGB(255, 3, 116, 6),
-                  );
-                  Future.delayed(const Duration(seconds: 1), () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (ctx) => ChatScreen(
-                          groupId: groupId,
-                          groupName: groupName,
-                          userName: userName,
-                        ),
-                      ),
-                    );
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          title: Text(
+            groupName,
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          subtitle: admin == null || admin.isEmpty
+              ? const Text('No members in the group', style: TextStyle(color: Color.fromARGB(255, 179, 185, 201)),)
+              : Text('Admin: ${getName(admin)}', style: const TextStyle(color: Color.fromARGB(255, 179, 185, 201))),
+          trailing: isJoined
+              ? Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white, width: 1),
                     borderRadius: BorderRadius.circular(10),
-                    color: const Color.fromARGB(255, 107, 114, 128),
+                    color: Colors.black,
                   ),
                   child: const Text(
-                    'Join',
+                    'Joined',
                     style: TextStyle(color: Colors.white),
                   ),
+                )
+              : InkWell(
+                  onTap: () async {
+                    await joinGroup(userName, groupName, groupId);
+                    setState(() {
+                      isJoined = !isJoined;
+                    });
+                    _showErrorDialog(
+                      'Successfully joined the group $groupName',
+                      'Joined',
+                      const Color.fromARGB(255, 3, 116, 6),
+                    );
+                    Future.delayed(const Duration(seconds: 1), () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (ctx) => ChatScreen(
+                            groupId: groupId,
+                            groupName: groupName,
+                            userName: userName,
+                          ),
+                        ),
+                      );
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 20),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.white, width: 1),
+                      borderRadius: BorderRadius.circular(10),
+                      color: const Color.fromARGB(255, 107, 114, 128),
+                    ),
+                    child: const Text(
+                      'Join',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
                 ),
-              ),
-      );
-    },
-  );
-}
-
+        );
+      },
+    );
+  }
 }

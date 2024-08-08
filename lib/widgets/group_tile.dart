@@ -7,11 +7,17 @@ class GroupTile extends StatefulWidget {
     required this.groupId,
     required this.groupName,
     required this.userName,
+    required this.lastMessage,
+    required this.lastMessageSender,
+    required this.lastMessageTime,
   });
 
   final String userName;
   final String groupName;
   final String groupId;
+  final String lastMessage;
+  final String lastMessageSender;
+  final String lastMessageTime;
 
   @override
   State<GroupTile> createState() {
@@ -39,7 +45,7 @@ class _GroupTileState extends State<GroupTile> {
         child: ListTile(
           leading: CircleAvatar(
             radius: 30,
-            backgroundColor: const Color.fromARGB(255, 107, 114, 128),
+            backgroundColor: const Color.fromARGB(255, 27, 32, 45),
             child: Text(
               widget.groupName[0].toUpperCase(),
               textAlign: TextAlign.center,
@@ -50,13 +56,27 @@ class _GroupTileState extends State<GroupTile> {
               ),
             ),
           ),
-          title: Text(
-            widget.groupName,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          title: Row(
+            children: [
+              Text(
+                widget.groupName,
+                textAlign: TextAlign.left,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const Spacer(),
+              Text(
+                widget.lastMessageTime,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+              ),
+            ],
           ),
           subtitle: Text(
-            'Join the conversation as ${widget.userName}',
-            style: const TextStyle(fontSize: 13),
+            '${widget.lastMessageSender} : ${widget.lastMessage}',
+            maxLines: 1, // Set the maximum number of lines to display
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+                fontSize: 13, color: Color.fromARGB(255, 179, 185, 201)),
           ),
         ),
       ),

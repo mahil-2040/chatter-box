@@ -1,11 +1,11 @@
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
-import 'package:chatter_box/screens/auth.dart';
 import 'package:chatter_box/screens/profile.dart';
 import 'package:chatter_box/screens/search.dart';
 import 'package:chatter_box/widgets/group_tile.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = false;
   String groupName = "";
   User? user = FirebaseAuth.instance.currentUser;
+  String userImage = "";
 
   @override
   void initState() {
@@ -46,6 +47,59 @@ class _HomeScreenState extends State<HomeScreen> {
     return null;
   }
 
+  Future<Map<String, dynamic>?> getGroupData(String groupId) async {
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance
+        .collection('groups')
+        .doc(groupId)
+        .get();
+
+    if (userDoc.exists) {
+      return userDoc.data() as Map<String, dynamic>?;
+    }
+    return null;
+  }
+
+  Future<String> getLastMessage(String groupId) async {
+    Map<String, dynamic>? groupData = await getGroupData(groupId);
+
+    if (groupData != null) {
+      return groupData['recentMessage'] as String;
+    }
+    return "";
+  }
+
+  Future<String> getLastMessageTime(String groupId) async {
+    Map<String, dynamic>? groupData = await getGroupData(groupId);
+
+    if (groupData != null) {
+      String time = groupData['recentMessageTime'] as String;
+
+      try {
+        DateFormat inputFormat =
+            DateFormat("d MMMM yyyy 'at' HH:mm:ss 'UTC+5:30'");
+        DateTime dateTime = inputFormat.parse(time);
+
+        DateTime istTime = dateTime;
+
+        String formattedTime = DateFormat.jm().format(istTime);
+
+        return formattedTime;
+      } catch (e) {
+        return "Error parsing time";
+      }
+    }
+    return "";
+  }
+
+  Future<String> getLastMessageSender(String groupId) async {
+    Map<String, dynamic>? groupData = await getGroupData(groupId);
+
+    if (groupData != null) {
+      return groupData['recentMessageSender'] as String;
+    }
+    return "";
+  }
+
   void fetchUserData() async {
     if (user != null) {
       Map<String, dynamic>? userData = await getUserData(user!.uid);
@@ -53,6 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (userData != null) {
         setState(() {
           username = userData['user_name'];
+          userImage = userData['image_url'];
         });
       }
     }
@@ -74,8 +129,10 @@ class _HomeScreenState extends State<HomeScreen> {
       'members': [],
       'groupIcon': '',
       'groupId': '',
-      'recentMessage': '',
-      'recentMessageSender': '',
+      'recentMessage': 'Group Created by $userName',
+      'recentMessageSender': userName,
+      'recentMessageTime':
+          '${DateFormat('d MMMM yyyy \'at\' HH:mm:ss').format(DateTime.now())} UTC+5:30',
     });
     await groupDocumentReference.update({
       'members': FieldValue.arrayUnion(['${user!.uid}_$userName']),
@@ -93,12 +150,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 27, 32, 45),
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 107, 114, 128),
-        centerTitle: true,
+        backgroundColor: const Color.fromARGB(255, 27, 32, 45),
         title: const Text(
-          'Groups',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28),
+          'Messages',
+          style: TextStyle(
+              fontWeight: FontWeight.bold, fontSize: 28, color: Colors.white),
         ),
         actions: [
           IconButton(
@@ -107,20 +165,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 builder: (ctx) => const SearchScreen(),
               ));
             },
-            icon: const Icon(Icons.search),
+            icon: const Icon(
+              Icons.search,
+              color: Colors.white,
+            ),
             color: Colors.black,
             iconSize: 28,
           ),
         ],
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       drawer: Drawer(
+        backgroundColor: const Color.fromARGB(255, 41, 47, 63),
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 50),
           children: [
-            Icon(
-              Icons.account_circle,
-              size: 150,
-              color: Colors.grey[700],
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 60,
+                  backgroundColor: Colors.grey[200],
+                  foregroundImage:
+                      userImage.isNotEmpty ? NetworkImage(userImage) : null,
+                ),
+                if (_isLoading) const CircularProgressIndicator(),
+              ],
             ),
             const SizedBox(
               height: 15,
@@ -131,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black),
+                  color: Colors.white),
             ),
             const SizedBox(
               height: 30,
@@ -140,27 +210,41 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 2,
             ),
             ListTile(
-              onTap: () {},
-              selectedColor: const Color.fromARGB(255, 231, 145, 7),
+              onTap: () {
+                Navigator.of(context).pop();
+              },
+              selectedColor: const Color.fromARGB(255, 27, 32, 45),
               selected: true,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-              leading: const Icon(Icons.group),
+              leading: Icon(
+                Icons.group,
+                color: selectedColor(context, true),
+                size: 30,
+              ),
               title: const Text(
                 'Groups',
-                style: TextStyle(color: Colors.black),
+                style: TextStyle(color: Colors.white, fontSize: 18),
               ),
             ),
             ListTile(
-              onTap: () {
-                Navigator.of(context).push(_createRoute());
+              onTap: () async {
+                Navigator.of(context).pop();
+                await Future.delayed(const Duration(milliseconds: 300));
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (ctx) => const ProfileScreen()));
               },
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-              leading: const Icon(Icons.account_circle),
+              leading: const Icon(
+                Icons.account_circle,
+                color: Colors.white,
+              ),
               title: const Text(
                 'Profile',
-                style: TextStyle(color: Colors.black),
+                style: TextStyle(
+                  color: Colors.white,
+                ),
               ),
             ),
             ListTile(
@@ -180,12 +264,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         ElevatedButton(
                           onPressed: () async {
+                            Navigator.of(context).pop();
+                            Navigator.of(context)
+                                .popUntil((route) => route.isFirst);
                             await FirebaseAuth.instance.signOut();
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(
-                                  builder: (context) => const AuthScreen()),
-                              (route) => false,
-                            );
                           },
                           child: const Text('Confirm'),
                         ),
@@ -196,10 +278,13 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-              leading: const Icon(Icons.exit_to_app),
+              leading: const Icon(
+                Icons.exit_to_app,
+                color: Colors.white,
+              ),
               title: const Text(
                 'Logout',
-                style: TextStyle(color: Colors.black),
+                style: TextStyle(color: Colors.white),
               ),
             ),
           ],
@@ -210,14 +295,18 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () {
           popUpDialog(context);
         },
-        backgroundColor: const Color.fromARGB(255, 107, 114, 128),
+        backgroundColor: const Color.fromARGB(255, 27, 32, 45),
         child: const Icon(
           Icons.add,
-          color: Colors.black,
+          color: Colors.white,
           size: 30,
         ),
       ),
     );
+  }
+
+  Color selectedColor(BuildContext context, bool isSelected) {
+    return isSelected ? Colors.black : Colors.white;
   }
 
   popUpDialog(BuildContext context) {
@@ -226,9 +315,11 @@ class _HomeScreenState extends State<HomeScreen> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 122, 129, 148),
           title: const Text(
             'Create a group',
             textAlign: TextAlign.left,
+            style: TextStyle(color: Color.fromARGB(255, 27, 32, 45)),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -243,12 +334,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           groupName = val;
                         });
                       },
-                      style: const TextStyle(color: Colors.black),
+                      style: const TextStyle(
+                          color: Color.fromARGB(255, 27, 32, 45)),
                       decoration: InputDecoration(
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
                           borderSide: const BorderSide(
-                            color: Color.fromARGB(255, 107, 114, 128),
+                            color: Colors.black,
                           ),
                         ),
                         errorBorder: OutlineInputBorder(
@@ -260,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
                           borderSide: const BorderSide(
-                            color: Color.fromARGB(255, 107, 114, 128),
+                            color: Color.fromARGB(255, 27, 32, 45),
                           ),
                         ),
                       ),
@@ -274,7 +366,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               child: const Text(
                 'Cancel',
-                style: TextStyle(color: Color.fromARGB(255, 107, 114, 128)),
+                style: TextStyle(color: Color.fromARGB(255, 27, 32, 45)),
               ),
             ),
             ElevatedButton(
@@ -305,7 +397,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 107, 114, 128)),
+                backgroundColor: const Color.fromARGB(255, 27, 32, 45),
+              ),
               child: const Text(
                 'Create',
                 style: TextStyle(color: Colors.white),
@@ -324,16 +417,58 @@ class _HomeScreenState extends State<HomeScreen> {
         if (snapshot.hasData) {
           if (snapshot.data['groups'] != null) {
             if (snapshot.data['groups'].length != 0) {
-              return ListView.builder(
-                itemCount: snapshot.data['groups'].length,
-                itemBuilder: (context, index) {
-                  int reverseIndex = snapshot.data['groups'].length - index - 1;
-                  return GroupTile(
-                    groupId: getId(snapshot.data['groups'][reverseIndex]),
-                    groupName: getName(snapshot.data['groups'][reverseIndex]),
-                    userName: username,
-                  );
-                },
+              return Container(
+                margin: const EdgeInsets.only(top: 30),
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30)),
+                  color: Color.fromARGB(255, 41, 47, 63),
+                ),
+                child: ListView.builder(
+                  itemCount: snapshot.data['groups'].length,
+                  itemBuilder: (context, index) {
+                    int reverseIndex =
+                        snapshot.data['groups'].length - index - 1;
+                    String groupId =
+                        getId(snapshot.data['groups'][reverseIndex]);
+                    String groupName =
+                        getName(snapshot.data['groups'][reverseIndex]);
+
+                    return FutureBuilder(
+                      future: Future.wait([
+                        getLastMessage(groupId),
+                        getLastMessageSender(groupId),
+                        getLastMessageTime(groupId),
+                      ]),
+                      builder: (context,
+                          AsyncSnapshot<List<String>> futureSnapshot) {
+                        if (futureSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center();
+                        }
+                        if (futureSnapshot.hasError) {
+                          return const Center(
+                            child: Text("Error loading messages"),
+                          );
+                        }
+
+                        String lastMessage = futureSnapshot.data![0];
+                        String lastMessageSender = futureSnapshot.data![1];
+                        String lastMessageTime = futureSnapshot.data![2];
+
+                        return GroupTile(
+                          groupId: groupId,
+                          groupName: groupName,
+                          userName: username,
+                          lastMessage: lastMessage,
+                          lastMessageSender: lastMessageSender,
+                          lastMessageTime: lastMessageTime,
+                        );
+                      },
+                    );
+                  },
+                ),
               );
             } else {
               return noGroupWidget();
@@ -382,21 +517,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-Route _createRoute() {
-  return PageRouteBuilder(
-    pageBuilder: (context, animation, secondaryAnimation) =>
-        const ProfileScreen(),
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      const begin = Offset(1.0, 0.0);
-      const end = Offset.zero;
-      const curve = Curves.ease;
+// Route _createRoute() {
+//   return PageRouteBuilder(
+//     pageBuilder: (context, animation, secondaryAnimation) =>
+//         const ProfileScreen(),
+//     transitionsBuilder: (context, animation, secondaryAnimation, child) {
+//       const begin = Offset(1.0, 0.0);
+//       const end = Offset.zero;
+//       const curve = Curves.ease;
 
-      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+//       var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
 
-      return SlideTransition(
-        position: animation.drive(tween),
-        child: child,
-      );
-    },
-  );
-}
+//       return SlideTransition(
+//         position: animation.drive(tween),
+//         child: child,
+//       );
+//     },
+//   );
+// }

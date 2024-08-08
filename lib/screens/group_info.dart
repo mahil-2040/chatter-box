@@ -76,8 +76,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     return res.substring(0, res.indexOf("_"));
   }
 
-  Future leaveGroup(
-      String userName, String groupName, String groupId) async {
+  Future leaveGroup(String userName, String groupName, String groupId) async {
     if (user == null) {
       throw Exception("No user is signed in");
     }
@@ -121,12 +120,15 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 27, 32, 45),
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 107, 114, 128),
+        bottomOpacity: 0.2,
+        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: const Color.fromARGB(255, 27, 32, 45),
         title: const Text(
           'Group Info',
           style: TextStyle(
-            color: Colors.black,
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -148,14 +150,42 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                             child: const Text('Cancel'),
                           ),
                           ElevatedButton(
-                            onPressed: () async {
+                            onPressed: () {
                               Navigator.of(context).pop();
-                              await leaveGroup(
-                                  userName, widget.groupName, widget.groupId);
-
-                              Navigator.of(context).pushReplacement(
-                                  MaterialPageRoute(
-                                      builder: (ctx) => const HomeScreen()));
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) {
+                                  return FutureBuilder(
+                                    future: leaveGroup(userName,
+                                        widget.groupName, widget.groupId),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState ==
+                                          ConnectionState.done) {
+                                        // Close the loading dialog
+                                        Navigator.of(context).pop();
+                                        // Navigate to HomeScreen
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                          Navigator.of(context).pushReplacement(
+                                            MaterialPageRoute(
+                                              builder: (ctx) =>
+                                                  const HomeScreen(),
+                                            ),
+                                          );
+                                        });
+                                        return const SizedBox
+                                            .shrink(); // Return an empty widget
+                                      } else {
+                                        // Display the loading indicator
+                                        return const Center(
+                                          child: CircularProgressIndicator(),
+                                        );
+                                      }
+                                    },
+                                  );
+                                },
+                              );
                             },
                             child: const Text('Confirm'),
                           ),
@@ -163,11 +193,20 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                       );
                     });
               },
-              icon: const Icon(Icons.exit_to_app))
+              icon: const Icon(
+                Icons.exit_to_app,
+                color: Colors.white,
+              ))
         ],
       ),
       body: Container(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+        margin: const EdgeInsets.only(top: 30),
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+          color: Color.fromARGB(255, 41, 47, 63),
+        ),
         child: Column(
           children: [
             Container(
@@ -182,7 +221,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    backgroundColor: const Color.fromARGB(255, 107, 114, 128),
+                    backgroundColor: const Color.fromARGB(255, 27, 32, 45),
                     child: Text(
                       widget.groupName[0].toUpperCase(),
                       textAlign: TextAlign.center,
@@ -201,13 +240,17 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                     children: [
                       Text(
                         'Group : ${widget.groupName}',
-                        style: const TextStyle(fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       const SizedBox(
                         height: 5,
                       ),
                       Text(
                         'Admin : ${getName(widget.adminName)}',
+                        style: const TextStyle(
+                            fontSize: 13,
+                            color: Color.fromARGB(255, 179, 185, 201)),
                       ),
                     ],
                   )
@@ -221,53 +264,139 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     );
   }
 
+  Future<String> getMemberImage(String userId) async {
+    Map<String, dynamic>? memberData = await getUserData(userId);
+    if (memberData != null) {
+      return memberData['image_url'] as String;
+    }
+    return "";
+  }
+
   memberList() {
     return StreamBuilder(
       stream: members,
       builder: (context, AsyncSnapshot snapshot) {
-        if (snapshot.hasData) {
-          if (snapshot.data['members'] != null) {
-            if (snapshot.data['members'].length != 0) {
-              return ListView.builder(
-                itemCount: snapshot.data['members'].length,
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: CircularProgressIndicator(
+              color: Theme.of(context).primaryColor,
+            ),
+          );
+        }
+
+        if (snapshot.hasData && snapshot.data['members'] != null) {
+          var membersList = snapshot.data['members'];
+
+          if (membersList.isNotEmpty) {
+            return Expanded(
+              // Wrap ListView in Expanded
+              child: ListView.builder(
+                itemCount: membersList.length,
                 shrinkWrap: true,
                 itemBuilder: (context, index) {
-                  return Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        radius: 30,
-                        backgroundColor:
-                            const Color.fromARGB(255, 107, 114, 128),
-                        child: Text(
-                          getName(snapshot.data['members'][index])[0]
-                              .toUpperCase(),
-                          style: const TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      title: Text(getName(snapshot.data['members'][index])),
-                      subtitle: Text(getId(snapshot.data['members'][index])),
-                    ),
+                  String memberId = getId(membersList[index]);
+                  String memberName = getName(membersList[index]);
+
+                  return FutureBuilder<String>(
+                    future: getMemberImage(memberId),
+                    builder: (context, imageSnapshot) {
+                      if (imageSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return ListTile(
+                          leading: const CircleAvatar(
+                            radius: 30,
+                            backgroundColor: Color.fromARGB(255, 27, 32, 45),
+                            child: CircularProgressIndicator(),
+                          ),
+                          title: Text(
+                            memberName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          subtitle: Text(
+                            memberId,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color.fromARGB(255, 179, 185, 201),
+                            ),
+                          ),
+                        );
+                      } else if (imageSnapshot.hasData) {
+                        return ListTile(
+                          leading: CircleAvatar(
+                            radius: 30,
+                            backgroundColor:
+                                const Color.fromARGB(255, 27, 32, 45),
+                            foregroundImage: NetworkImage(imageSnapshot.data!),
+                            child: Text(
+                              memberName[0].toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            memberName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          subtitle: Text(
+                            memberId,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color.fromARGB(255, 179, 185, 201),
+                            ),
+                          ),
+                        );
+                      } else {
+                        return ListTile(
+                          leading: CircleAvatar(
+                            radius: 30,
+                            backgroundColor:
+                                const Color.fromARGB(255, 27, 32, 45),
+                            child: Text(
+                              memberName[0].toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            memberName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          subtitle: Text(
+                            memberId,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color.fromARGB(255, 179, 185, 201),
+                            ),
+                          ),
+                        );
+                      }
+                    },
                   );
                 },
-              );
-            } else {
-              return const Center(
-                child: Text("NO MEMBERS"),
-              );
-            }
+              ),
+            );
           } else {
             return const Center(
-              child: Text("NO MEMBERS"),
+              child: Text("No members in this group."),
             );
           }
         } else {
-          return Center(
-              child: CircularProgressIndicator(
-            color: Theme.of(context).primaryColor,
-          ));
+          return const Center(
+            child: Text("No members found."),
+          );
         }
       },
     );
