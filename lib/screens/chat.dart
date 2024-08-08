@@ -81,7 +81,7 @@ class _ChatScreenState extends State<ChatScreen> {
             },
           ),
             CircleAvatar(
-              radius: 20,
+              radius: 18, // Reduced radius to save space
               backgroundColor: const Color.fromARGB(255, 41, 47, 63),
               child: Text(
                 widget.groupName.isNotEmpty
@@ -91,25 +91,22 @@ class _ChatScreenState extends State<ChatScreen> {
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 22,
+                  fontSize: 16, // Reduce the font size to fit better
                 ),
               ),
             ),
-            // const SizedBox(width: 48),
+            const SizedBox(
+              width: 10,
+            ),
+            Text(
+              widget.groupName,
+              overflow: TextOverflow.ellipsis, // Prevent title overflow
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ],
-        ),
-        automaticallyImplyLeading: false,
-        iconTheme: const IconThemeData(
-          color: Colors.white,
-        ),
-        backgroundColor: const Color.fromARGB(255, 27, 32, 45),
-        // centerTitle: true,
-        title: Text(
-          widget.groupName,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
         ),
         actions: [
           IconButton(
