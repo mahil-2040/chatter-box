@@ -52,7 +52,7 @@ class MessageBubble extends StatelessWidget {
             child: CircleAvatar(
               backgroundColor: Colors.white,
               radius: 20,
-              backgroundImage: NetworkImage(userImage!),
+              backgroundImage: userImage != "" ? NetworkImage(userImage!) : null,
               child: userImage == null
                   ? const Icon(
                       Icons.account_circle,
