@@ -17,6 +17,7 @@ class GroupInfoScreen extends StatefulWidget {
   final String groupName;
   final String groupId;
   final String adminName;
+
   @override
   State<GroupInfoScreen> createState() {
     return _GroupInfoScreenState();
@@ -32,6 +33,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
   String grupnewName = "";
   File? _selectedGroupImage;
   String groupImage = "";
+  String adminname = "";
 
   @override
   void initState() {
@@ -39,6 +41,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     getMembers();
     fetchUserData();
     fetchGroupData();
+    fetchAdminName();
   }
 
   getMembers() async {
@@ -54,6 +57,14 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
         .collection('groups')
         .doc(groupId)
         .snapshots();
+  }
+
+  Future<void> fetchAdminName() async {
+    String name =
+        await getAdminName(widget.adminName); // Pass the admin ID here
+    setState(() {
+      adminname = name; // Update the state with the admin name
+    });
   }
 
   Future<Map<String, dynamic>?> getUserData(String uid) async {
@@ -78,6 +89,14 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     }
   }
 
+  Future<String> getAdminName(String id) async {
+    Map<String, dynamic>? userData = await getUserData(id);
+    if (userData != null) {
+      return userData['user_name'] as String;
+    }
+    return "";
+  }
+
   Future<Map<String, dynamic>?> getGropData(String groupid) async {
     DocumentSnapshot groupDoc = await FirebaseFirestore.instance
         .collection('groups')
@@ -94,18 +113,18 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     Map<String, dynamic>? groupData = await getGropData(widget.groupId);
     if (groupData != null) {
       setState(() {
-        groupImage = groupData['groupIcon'];
+        groupImage = groupData['groupIcon'] ?? "";
       });
     }
   }
 
-  String getName(String res) {
-    return res.substring(res.indexOf('_') + 1);
-  }
+  // String getName(String res) {
+  //   return res.substring(res.indexOf('_') + 1);
+  // }
 
-  String getId(String res) {
-    return res.substring(0, res.indexOf("_"));
-  }
+  // String getId(String res) {
+  //   return res.substring(0, res.indexOf("_"));
+  // }
 
   Future leaveGroup(String userName, String groupName, String groupId) async {
     if (user == null) {
@@ -124,25 +143,25 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     List<dynamic> members = groupdocumentSnapshot['members'];
 
     // Check if the user is the admin
-    bool isAdmin = groupdocumentSnapshot['admin'] == '${user!.uid}_$userName';
+    bool isAdmin = groupdocumentSnapshot['admin'] == user!.uid;
 
     await FirebaseFirestore.instance.runTransaction((transaction) async {
-      if (groups.contains('${groupId}_$groupName')) {
+      if (groups.contains(groupId)) {
         if (isAdmin) {
           // Assign a new admin if the current user is the admin
           if (members.length > 1) {
-            String newAdmin = members
-                .firstWhere((member) => member != '${user!.uid}_$userName');
+            String newAdmin =
+                members.firstWhere((member) => member != user!.uid);
             transaction.update(groupDocumentReference, {'admin': newAdmin});
           } else {
             transaction.update(groupDocumentReference, {'admin': null});
           }
         }
         transaction.update(userDocumentReference, {
-          'groups': FieldValue.arrayRemove(['${groupId}_$groupName']),
+          'groups': FieldValue.arrayRemove([groupId]),
         });
         transaction.update(groupDocumentReference, {
-          'members': FieldValue.arrayRemove(['${user!.uid}_$userName']),
+          'members': FieldValue.arrayRemove([(user!.uid)]),
         });
       }
     });
@@ -157,8 +176,11 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
           .update({
         'groupName': _groupnameController.text,
       });
+
+      setState(() {
+        fetchGroupData();
+      });
     }
-    Navigator.pop(context);
   }
 
   void _pickImage(String type) async {
@@ -171,6 +193,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     }
     setState(() {
       _selectedGroupImage = File(pickedImage.path);
+      print(_selectedGroupImage);
     });
   }
 
@@ -186,7 +209,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
       );
 
       if (_selectedGroupImage != null) {
-        print('got inside if statement');
+        // print('got inside if statement');
         final storageRef = FirebaseStorage.instance
             .ref()
             .child('group_images')
@@ -194,7 +217,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
 
         await storageRef.putFile(_selectedGroupImage!);
         final imageUrl = await storageRef.getDownloadURL();
-        print('Image uploaded successfully: $imageUrl');
+        // print('Image uploaded successfully: $imageUrl');
         await FirebaseFirestore.instance
             .collection('groups')
             .doc(widget.groupId)
@@ -207,7 +230,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
         fetchGroupData();
       });
 
-      print('Image fetched successfully:');
+      // print('Image fetched successfully:');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Group icon updated successfully')),
       );
@@ -428,6 +451,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                         setState(() {
                           _saveGroupName();
                         });
+                        Navigator.pop(context);
                       },
                       child: const Text(
                         'Save',
@@ -557,13 +581,12 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                           radius: 70,
                           backgroundColor:
                               const Color.fromARGB(255, 27, 32, 45),
-                          foregroundImage: groupImage != ""
+                          foregroundImage: groupImage.isNotEmpty
                               ? NetworkImage(groupImage)
                               : null,
                           child: groupImage.isEmpty
                               ? const Icon(Icons.group,
-                                  size: 70,
-                                  color: Colors.white)
+                                  size: 70, color: Colors.white)
                               : null,
                         ),
                         Positioned(
@@ -600,18 +623,19 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                       ),
                       // const SizedBox(width: 5,),
                       IconButton(
-                          onPressed: _editNameSheet,
-                          icon: const Icon(
-                            Icons.edit,
-                            color: Colors.white,
-                          ))
+                        onPressed: _editNameSheet,
+                        icon: const Icon(
+                          Icons.edit,
+                          color: Colors.white,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(
                     height: 5,
                   ),
                   Text(
-                    'Admin : ${getName(widget.adminName)}',
+                    'Admin : $adminname',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                         fontSize: 17,
@@ -651,6 +675,14 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     return "";
   }
 
+  Future<String> getMemberName(String userId) async {
+    Map<String, dynamic>? memberData = await getUserData(userId);
+    if (memberData != null) {
+      return memberData['user_name'] as String;
+    }
+    return "";
+  }
+
   memberList() {
     return StreamBuilder(
       stream: members,
@@ -668,18 +700,20 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
 
           if (membersList.isNotEmpty) {
             return Expanded(
-              // Wrap ListView in Expanded
               child: ListView.builder(
                 itemCount: membersList.length,
                 shrinkWrap: true,
                 itemBuilder: (context, index) {
-                  String memberId = getId(membersList[index]);
-                  String memberName = getName(membersList[index]);
+                  String memberId = membersList[index];
 
-                  return FutureBuilder<String>(
-                    future: getMemberImage(memberId),
-                    builder: (context, imageSnapshot) {
-                      if (imageSnapshot.connectionState ==
+                  return FutureBuilder(
+                    future: Future.wait([
+                      getMemberImage(memberId),
+                      getMemberName(memberId),
+                    ]),
+                    builder:
+                        (context, AsyncSnapshot<List<String>> futureSnapshot) {
+                      if (futureSnapshot.connectionState ==
                           ConnectionState.waiting) {
                         return ListTile(
                           leading: const CircleAvatar(
@@ -687,9 +721,9 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                             backgroundColor: Color.fromARGB(255, 27, 32, 45),
                             child: CircularProgressIndicator(),
                           ),
-                          title: Text(
-                            memberName,
-                            style: const TextStyle(
+                          title: const Text(
+                            'Loading...',
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
@@ -702,13 +736,18 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                             ),
                           ),
                         );
-                      } else if (imageSnapshot.hasData) {
+                      } else if (futureSnapshot.hasData &&
+                          futureSnapshot.data!.length == 2) {
+                        final imageUrl = futureSnapshot.data![0];
+                        final memberName = futureSnapshot.data![1];
                         return ListTile(
                           leading: CircleAvatar(
                             radius: 30,
                             backgroundColor:
                                 const Color.fromARGB(255, 27, 32, 45),
-                            foregroundImage: NetworkImage(imageSnapshot.data!),
+                            foregroundImage: imageUrl != null
+                                ? NetworkImage(imageUrl)
+                                : null,
                             child: Text(
                               memberName[0].toUpperCase(),
                               style: const TextStyle(
@@ -733,31 +772,17 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                           ),
                         );
                       } else {
-                        return ListTile(
+                        return const ListTile(
                           leading: CircleAvatar(
                             radius: 30,
-                            backgroundColor:
-                                const Color.fromARGB(255, 27, 32, 45),
-                            child: Text(
-                              memberName[0].toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            backgroundColor: Color.fromARGB(255, 27, 32, 45),
+                            child: Icon(Icons.error, color: Colors.red),
                           ),
                           title: Text(
-                            memberName,
-                            style: const TextStyle(
+                            'Error loading member data',
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
-                            ),
-                          ),
-                          subtitle: Text(
-                            memberId,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color.fromARGB(255, 179, 185, 201),
                             ),
                           ),
                         );

@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+enum MessageType {text, image, voice, location}
+
 class NewMessage extends StatefulWidget {
   const NewMessage({super.key, required this.groupId});
 
@@ -82,8 +84,27 @@ class _NewMessageState extends State<NewMessage> {
     );
   }
 
+  // void _imagePicker(String type) async {
+  //   if(type == 'Camera'){
+  //     final pickedImage = await ImagePicker().pickImage(
+  //     source: ImageSource.camera,
+  //     imageQuality: 50,
+  //   );
+
+  //   if (pickedImage == null) {
+  //     return;
+  //   }
+
+  //   setState(() {
+  //     _pickedImageFile = File(pickedImage.path);
+  //   });
+
+  //   widget.onPickImage(_pickedImageFile!);
+  //   }
+  // }
+
   Widget _buildBottomSheetItem(IconData icon, String label) {
-    return Column(
+    return Column(  
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 5,),

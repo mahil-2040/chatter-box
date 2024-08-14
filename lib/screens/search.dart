@@ -28,13 +28,13 @@ class _SearchScreenState extends State<SearchScreen> {
     fetchUserData();
   }
 
-  String getName(String res) {
-    return res.substring(res.indexOf('_') + 1);
-  }
+  // String getName(String res) {
+  //   return res.substring(res.indexOf('_') + 1);
+  // }
 
-  String getId(String res) {
-    return res.substring(0, res.indexOf("_"));
-  }
+  // String getId(String res) {
+  //   return res.substring(0, res.indexOf("_"));
+  // }
 
   Future<Map<String, dynamic>?> getUserData(String uid) async {
     DocumentSnapshot userDoc =
@@ -130,7 +130,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
     List<dynamic> groups = await documentSnapshot['groups'];
 
-    if (groups.contains('${groupId}_$groupName')) {
+    if (groups.contains(groupId)) {
       return true;
     } else {
       return false;
@@ -200,16 +200,16 @@ class _SearchScreenState extends State<SearchScreen> {
     List<dynamic> groups = userdocumentSnapshot['groups'];
 
     await FirebaseFirestore.instance.runTransaction((transaction) async {
-      if (!groups.contains('${groupId}_$groupName')) {
+      if (!groups.contains(groupId)) {
         if (groupdocumentSnapshot['admin'] == null) {
           transaction.update(
-              groupDocumentReference, {'admin': '${user!.uid}_$userName'});
+              groupDocumentReference, {'admin': user!.uid});
         }
         transaction.update(userDocumentReference, {
-          'groups': FieldValue.arrayUnion(['${groupId}_$groupName']),
+          'groups': FieldValue.arrayUnion([groupId]),
         });
         transaction.update(groupDocumentReference, {
-          'members': FieldValue.arrayUnion(['${user!.uid}_$userName']),
+          'members': FieldValue.arrayUnion([(user!.uid)]),
         });
       }
     });
@@ -231,6 +231,14 @@ class _SearchScreenState extends State<SearchScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(snackBar);
+  }
+  getAdminName(String id) async {
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(id)
+        .get();
+    return userDoc['admin'] as String;
+    
   }
 
   Widget groupTile(
@@ -274,7 +282,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           subtitle: admin == null || admin.isEmpty
               ? const Text('No members in the group', style: TextStyle(color: Color.fromARGB(255, 179, 185, 201)),)
-              : Text('Admin: ${getName(admin)}', style: const TextStyle(color: Color.fromARGB(255, 179, 185, 201))),
+              : Text('Admin: ${getAdminName(admin)}', style: const TextStyle(color: Color.fromARGB(255, 179, 185, 201))),
           trailing: isJoined
               ? Container(
                   padding:

@@ -57,7 +57,7 @@ class DefaultFirbaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBKW9pjoW4Izqdr-RFyUW9oO40C3xvWrHA',
-    appId: '1:341643058999:android:eccaff42b6f21280df44b2',
+    appId: '1:341643058999:android:97fa0ad4a2cbd3fcdf44b2',
     messagingSenderId: '341643058999',
     projectId: 'chatter-box-19d4b',
     storageBucket: 'chatter-box-19d4b.appspot.com',
@@ -71,4 +71,5 @@ class DefaultFirbaseOptions {
     storageBucket: 'chatter-box-19d4b.appspot.com',
     iosBundleId: 'com.example.chatterBox',
   );
+
 }

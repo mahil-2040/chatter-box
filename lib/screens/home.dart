@@ -29,13 +29,13 @@ class _HomeScreenState extends State<HomeScreen> {
     fetchUserData();
   }
 
-  String getId(String res) {
-    return res.substring(0, res.indexOf('_'));
-  }
+  // String getId(String res) {
+  //   return res.substring(0, res.indexOf('_'));
+  // }
 
-  String getName(String res) {
-    return res.substring(res.indexOf('_') + 1);
-  }
+  // String getName(String res) {
+  //   return res.substring(res.indexOf('_') + 1);
+  // }
 
   Future<Map<String, dynamic>?> getUserData(String uid) async {
     DocumentSnapshot userDoc =
@@ -64,6 +64,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (groupData != null) {
       return groupData['recentMessage'] as String;
+    }
+    return "";
+  }
+
+  Future<String> getGroupNames(String groupId) async {
+    Map<String, dynamic>? groupData = await getGroupData(groupId);
+
+    if (groupData != null) {
+      return groupData['groupName'] as String;
     }
     return "";
   }
@@ -125,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
     DocumentReference groupDocumentReference =
         await FirebaseFirestore.instance.collection('groups').add({
       'groupName': groupName,
-      'admin': '${id}_$userName',
+      'admin': id,
       'members': [],
       'groupIcon': '',
       'groupId': '',
@@ -135,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
           '${DateFormat('d MMMM yyyy \'at\' HH:mm:ss').format(DateTime.now())} UTC+5:30',
     });
     await groupDocumentReference.update({
-      'members': FieldValue.arrayUnion(['${user!.uid}_$userName']),
+      'members': FieldValue.arrayUnion([(user!.uid)]),
       'groupId': groupDocumentReference.id,
     });
     DocumentReference userDocumentReference =
@@ -143,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return await userDocumentReference.update({
       'groups':
-          FieldValue.arrayUnion(['${groupDocumentReference.id}_$groupName'])
+          FieldValue.arrayUnion([(groupDocumentReference.id)])
     });
   }
 
@@ -431,15 +440,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     int reverseIndex =
                         snapshot.data['groups'].length - index - 1;
                     String groupId =
-                        getId(snapshot.data['groups'][reverseIndex]);
-                    String groupName =
-                        getName(snapshot.data['groups'][reverseIndex]);
-
+                        snapshot.data['groups'][reverseIndex];
+                    
                     return FutureBuilder(
                       future: Future.wait([
                         getLastMessage(groupId),
                         getLastMessageSender(groupId),
                         getLastMessageTime(groupId),
+                        getGroupNames(groupId),
                       ]),
                       builder: (context,
                           AsyncSnapshot<List<String>> futureSnapshot) {
@@ -456,7 +464,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         String lastMessage = futureSnapshot.data![0];
                         String lastMessageSender = futureSnapshot.data![1];
                         String lastMessageTime = futureSnapshot.data![2];
-
+                        String groupName = futureSnapshot.data![3];
+                        
                         return GroupTile(
                           groupId: groupId,
                           groupName: groupName,
