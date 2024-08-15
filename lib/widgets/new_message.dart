@@ -1,9 +1,15 @@
+import 'dart:io';
+
+import 'package:chatter_box/screens/image_preview.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
-enum MessageType {text, image, voice, location}
+enum MessageType { text, image, voice, location }
 
 class NewMessage extends StatefulWidget {
   const NewMessage({super.key, required this.groupId});
@@ -18,6 +24,10 @@ class NewMessage extends StatefulWidget {
 
 class _NewMessageState extends State<NewMessage> {
   final _messageController = TextEditingController();
+  File? _pickedImageFile;
+  String imageUrl = "";
+  var messageType = MessageType.text;
+  final imageId = const Uuid().v1();
 
   @override
   void dispose() {
@@ -26,12 +36,15 @@ class _NewMessageState extends State<NewMessage> {
   }
 
   void _submit() async {
-    final enteredMessage = _messageController.text;
+    String enteredMessage = "";
+    if (messageType == MessageType.text) {
+      enteredMessage = _messageController.text;
+    } else if (messageType == MessageType.image) {
+      enteredMessage = imageUrl;
+    }
     if (enteredMessage.trim().isEmpty) {
       return;
     }
-
-    // FocusScope.of(context).unfocus();
     _messageController.clear();
 
     final user = FirebaseAuth.instance.currentUser!;
@@ -50,12 +63,15 @@ class _NewMessageState extends State<NewMessage> {
       'userId': user.uid,
       'username': userData.data()!['user_name'],
       'userImage': userData.data()!['image_url'],
+      'messageType': messageType.toString().split('.').last, // Store as string
     });
-
+    
     FirebaseFirestore.instance.collection('groups').doc(widget.groupId).update({
-      'recentMessage': enteredMessage,
+      'recentMessage':
+          messageType == MessageType.text ? enteredMessage : 'image',
       'recentMessageSender': userData.data()!['user_name'],
-      'recentMessageTime' : '${DateFormat('d MMMM yyyy \'at\' HH:mm:ss').format(DateTime.now())} UTC+5:30',
+      'recentMessageTime':
+          '${DateFormat('d MMMM yyyy \'at\' HH:mm:ss').format(DateTime.now())} UTC+5:30',
     });
   }
 
@@ -64,9 +80,9 @@ class _NewMessageState extends State<NewMessage> {
       context: context,
       builder: (context) => Container(
         decoration: const BoxDecoration(
-          color:  Color.fromARGB(255, 27, 32, 45),
-          borderRadius: BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28))
-        ),
+            color: Color.fromARGB(255, 27, 32, 45),
+            borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(28), topRight: Radius.circular(28))),
         height: 150,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 20),
@@ -84,40 +100,95 @@ class _NewMessageState extends State<NewMessage> {
     );
   }
 
-  // void _imagePicker(String type) async {
-  //   if(type == 'Camera'){
-  //     final pickedImage = await ImagePicker().pickImage(
-  //     source: ImageSource.camera,
-  //     imageQuality: 50,
-  //   );
+  void _imagePicker(String type) async {
+    final ImagePicker picker = ImagePicker();
+    XFile? pickedImage;
 
-  //   if (pickedImage == null) {
-  //     return;
-  //   }
+    if (type == 'Camera') {
+      pickedImage = await picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 50,
+      );
+    } else if (type == 'Gallery') {
+      pickedImage = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 50,
+      );
+    }
 
-  //   setState(() {
-  //     _pickedImageFile = File(pickedImage.path);
-  //   });
+    if (pickedImage == null) {
+      return;
+    }
 
-  //   widget.onPickImage(_pickedImageFile!);
-  //   }
-  // }
+    // Navigate to the image preview screen
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ImagePreviewScreen(
+          imageFile: File(pickedImage!.path),
+          onSend: () async {
+            Navigator.of(context).pop(); // Close the preview screen
+            Navigator.of(context).pop(); // Close the preview screen
+            try {
+              final storageRef = FirebaseStorage.instance
+                  .ref()
+                  .child('chat_images')
+                  .child('$imageId.jpg');
+
+              // Upload the image file
+              await storageRef.putFile(File(pickedImage!.path));
+
+              // Retrieve the image URL
+              imageUrl = await storageRef.getDownloadURL();
+
+              setState(() {
+                messageType = MessageType.image;
+                _pickedImageFile = File(pickedImage!.path);
+              });
+
+              _submit(); // Send the image message
+            } catch (e) {
+              // Handle any errors that occur during upload
+              print('Failed to upload image: $e');
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Failed to upload image. Please try again.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        ),
+      ),
+    );
+  }
 
   Widget _buildBottomSheetItem(IconData icon, String label) {
-    return Column(  
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const SizedBox(height: 5,),
+        const SizedBox(
+          height: 5,
+        ),
         CircleAvatar(
           radius: 30,
-          backgroundColor: const Color.fromARGB(255,122, 129, 148),
+          backgroundColor: const Color.fromARGB(255, 122, 129, 148),
           child: IconButton(
-            icon: Icon(icon, size: 30, color: Colors.black,),
-            onPressed: () {},
+            icon: Icon(
+              icon,
+              size: 30,
+              color: Colors.black,
+            ),
+            onPressed: () {
+              _imagePicker(label);
+            },
           ),
         ),
         const SizedBox(height: 3),
-        Text(label, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white),),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white),
+        ),
       ],
     );
   }
@@ -139,7 +210,7 @@ class _NewMessageState extends State<NewMessage> {
                   IconButton(
                     onPressed: () {},
                     icon: const Icon(Icons.keyboard_voice_rounded),
-                    color: const Color.fromARGB(255,147, 152, 167),
+                    color: const Color.fromARGB(255, 147, 152, 167),
                   ),
                   const SizedBox(
                     width: 5,
@@ -164,7 +235,7 @@ class _NewMessageState extends State<NewMessage> {
                   IconButton(
                     onPressed: _showAttachmentOptions,
                     icon: const Icon(Icons.attach_file),
-                    color: const Color.fromARGB(255,147, 152, 167),
+                    color: const Color.fromARGB(255, 147, 152, 167),
                   ),
                   IconButton(
                     onPressed: () {},

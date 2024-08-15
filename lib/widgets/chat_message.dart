@@ -94,6 +94,7 @@ class _ChatMessageState extends State<ChatMessage> {
                 message: chatMessage['text'],
                 isMe: user.uid == currentMessageUserId,
                 time: chatMessage['createdAt'],
+                messagetype: chatMessage['messageType'],
               );
             } else {
               return MessageBubble.first(
@@ -102,6 +103,7 @@ class _ChatMessageState extends State<ChatMessage> {
                 message: chatMessage['text'],
                 isMe: user.uid == currentMessageUserId,
                 time: chatMessage['createdAt'],
+                messagetype: chatMessage['messageType'],
               );
             }
           },
