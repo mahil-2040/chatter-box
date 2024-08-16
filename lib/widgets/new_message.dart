@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:chatter_box/screens/contacts.dart';
 import 'package:chatter_box/screens/image_preview.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,7 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
-enum MessageType { text, image, voice, location }
+enum MessageType { text, image, voice, location, contacts }
 
 class NewMessage extends StatefulWidget {
   const NewMessage({super.key, required this.groupId});
@@ -46,6 +47,7 @@ class _NewMessageState extends State<NewMessage> {
       return;
     }
     _messageController.clear();
+    FocusScope.of(context).unfocus();
 
     final user = FirebaseAuth.instance.currentUser!;
     final userData = await FirebaseFirestore.instance
@@ -65,13 +67,19 @@ class _NewMessageState extends State<NewMessage> {
       'userImage': userData.data()!['image_url'],
       'messageType': messageType.toString().split('.').last, // Store as string
     });
-    
+
     FirebaseFirestore.instance.collection('groups').doc(widget.groupId).update({
       'recentMessage':
           messageType == MessageType.text ? enteredMessage : 'image',
       'recentMessageSender': userData.data()!['user_name'],
       'recentMessageTime':
           '${DateFormat('d MMMM yyyy \'at\' HH:mm:ss').format(DateTime.now())} UTC+5:30',
+    });
+
+    setState(() {
+      messageType = MessageType.text;
+      imageUrl = ""; // Clear the image URL
+      _pickedImageFile = null; // Clear the picked image file
     });
   }
 
@@ -100,6 +108,11 @@ class _NewMessageState extends State<NewMessage> {
     );
   }
 
+  void contactSelector() {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (ctx) =>  ContactsScreen(groupId: widget.groupId,)));
+  }
+
   void _imagePicker(String type) async {
     final ImagePicker picker = ImagePicker();
     XFile? pickedImage;
@@ -126,7 +139,7 @@ class _NewMessageState extends State<NewMessage> {
         builder: (context) => ImagePreviewScreen(
           imageFile: File(pickedImage!.path),
           onSend: () async {
-            Navigator.of(context).pop(); // Close the preview screen
+            Navigator.of(context).pop();
             Navigator.of(context).pop(); // Close the preview screen
             try {
               final storageRef = FirebaseStorage.instance
@@ -179,7 +192,9 @@ class _NewMessageState extends State<NewMessage> {
               color: Colors.black,
             ),
             onPressed: () {
-              _imagePicker(label);
+              label == 'Camera' || label == 'Gallery'
+                  ? _imagePicker(label)
+                  : contactSelector();
             },
           ),
         ),

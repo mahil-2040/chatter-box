@@ -1,10 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:chatter_box/screens/image_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
-enum MessageType { text, image, voice, location }
+enum MessageType { text, image, voice, location, contact }
 
-class MessageBubble extends StatelessWidget {
+class MessageBubble extends StatefulWidget {
   const MessageBubble.first({
     super.key,
     required this.userImage,
@@ -31,8 +32,13 @@ class MessageBubble extends StatelessWidget {
   final String message;
   final bool isMe;
   final Timestamp time;
-  final String messagetype; // Ensure this is of type MessageType
+  final String messagetype;
 
+  @override
+  State<MessageBubble> createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends State<MessageBubble> {
   String getMessageTime(Timestamp time) {
     String formattedTime =
         '${DateFormat('d MMMM yyyy \'at\' HH:mm:ss').format(DateTime.now())} UTC+5:30';
@@ -50,16 +56,17 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        if (userImage != null)
+        if (widget.userImage != null)
           Positioned(
             top: 23,
-            right: isMe ? 0 : null,
+            right: widget.isMe ? 0 : null,
             child: CircleAvatar(
               backgroundColor: Colors.white,
               radius: 20,
-              backgroundImage:
-                  userImage != "" ? NetworkImage(userImage!) : null,
-              child: userImage == null
+              backgroundImage: widget.userImage != ""
+                  ? NetworkImage(widget.userImage!)
+                  : null,
+              child: widget.userImage == null
                   ? const Icon(
                       Icons.account_circle,
                       size: 40,
@@ -72,25 +79,26 @@ class MessageBubble extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 46),
           child: Row(
             mainAxisAlignment:
-                isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                widget.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
               Column(
-                crossAxisAlignment:
-                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                crossAxisAlignment: widget.isMe
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
                 children: [
-                  if (isFirstInSequence) const SizedBox(height: 18),
+                  if (widget.isFirstInSequence) const SizedBox(height: 18),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 290),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isMe
+                        color: widget.isMe
                             ? const Color.fromARGB(255, 122, 129, 148)
                             : const Color.fromARGB(255, 55, 62, 78),
                         borderRadius: BorderRadius.only(
-                          topLeft: !isMe && isFirstInSequence
+                          topLeft: !widget.isMe && widget.isFirstInSequence
                               ? Radius.zero
                               : const Radius.circular(12),
-                          topRight: isMe && isFirstInSequence
+                          topRight: widget.isMe && widget.isFirstInSequence
                               ? Radius.zero
                               : const Radius.circular(12),
                           bottomLeft: const Radius.circular(12),
@@ -100,49 +108,13 @@ class MessageBubble extends StatelessWidget {
                       padding: EdgeInsets.only(
                         top: 8,
                         bottom: 8,
-                        left: messagetype == 'text' ? 18 : 5,
-                        right: messagetype == 'text' ? 14 : 5,
+                        left: widget.messagetype == 'text' ? 18 : 5,
+                        right: widget.messagetype == 'text' ? 14 : 5,
                       ),
                       margin: const EdgeInsets.symmetric(
                           vertical: 4, horizontal: 12),
-                      child: messagetype == 'text'
-                          ? Column(
-                              crossAxisAlignment: isMe
-                                  ? CrossAxisAlignment.end
-                                  : CrossAxisAlignment.start,
-                              children: [
-                                if (username != null)
-                                  Text(
-                                    textAlign:
-                                        isMe ? TextAlign.right : TextAlign.left,
-                                    username!,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        fontSize: 16),
-                                  ),
-                                Text(
-                                  message,
-                                  textAlign:
-                                      isMe ? TextAlign.right : TextAlign.left,
-                                  style: const TextStyle(
-                                      fontSize: 15,
-                                      color:
-                                          Color.fromARGB(255, 220, 220, 220)),
-                                  softWrap: true,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  getMessageTime(time),
-                                  textAlign: TextAlign.right,
-                                  style: const TextStyle(
-                                      fontSize: 12,
-                                      color:
-                                          Color.fromARGB(255, 180, 180, 180)),
-                                ),
-                              ],
-                            )
-                          : imageMessage(message),
+                      child: buildMessageContent(
+                          widget.message, widget.messagetype),
                     ),
                   ),
                 ],
@@ -154,46 +126,145 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
+  Widget buildMessageContent(String message, String messageType) {
+    switch (messageType) {
+      case 'text':
+        return textMessage(message);
+      case 'image':
+        return imageMessage(message);
+      case 'contact':
+        return contactMessage(message);
+      default:
+        return textMessage(message);
+    }
+  }
+
+  Widget textMessage(String text) {
+    return Column(
+      crossAxisAlignment:
+          widget.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        if (widget.username != null)
+          Text(
+            widget.username!,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
+          ),
+        Text(
+          text,
+          style: const TextStyle(
+              fontSize: 17, color: Color.fromARGB(255, 220, 220, 220)),
+          softWrap: true,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          getMessageTime(widget.time),
+          style: const TextStyle(
+              fontSize: 12, color: Color.fromARGB(255, 180, 180, 180)),
+        ),
+      ],
+    );
+  }
+
   Widget imageMessage(String url) {
     return Column(
-      crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          widget.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        if (username != null)
+        if (widget.username != null)
           Text(
-            textAlign: isMe ? TextAlign.right : TextAlign.left,
-            username!,
+            textAlign: widget.isMe ? TextAlign.right : TextAlign.left,
+            widget.username!,
             style: const TextStyle(
                 fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
           ),
-        if (username != null)
-          const SizedBox(height: 3,),
-        Stack(
-          children: [
-            ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(10),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Image.network(
-                  url,
-                  fit: BoxFit.cover,
+        if (widget.username != null)
+          const SizedBox(
+            height: 3,
+          ),
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (ctx) => ImageScreen(imageUrl: url)));
+          },
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
-            ),
-            Positioned(
-              bottom: 2,
-              right: 3,
-              child: Text(
-                getMessageTime(time),
-                textAlign: TextAlign.right,
-                style: const TextStyle(fontSize: 12, color: Colors.white),
+              Positioned(
+                bottom: 2,
+                right: 3,
+                child: Text(
+                  getMessageTime(widget.time),
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(fontSize: 12, color: Colors.white),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
+    );
+  }
+
+  Widget contactMessage(String contactInfo) {
+    // Assuming contactInfo is a string in the format "Contact Name: Contact Number"
+    List<String> contactDetails = contactInfo.split('_');
+    String contactName = contactDetails[0].trim();
+    String contactNumber = contactDetails[1].trim();
+
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.contact_phone, color: Colors.white, size: 50),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  contactName,
+                  textAlign: TextAlign.start,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 16),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  contactNumber,
+                  textAlign: TextAlign.start,
+                  style: const TextStyle(
+                      fontSize: 15, color: Color.fromARGB(255, 220, 220, 220)),
+                ),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Text(
+                    getMessageTime(widget.time),
+                    style: const TextStyle(
+                        fontSize: 12,
+                        color: Color.fromARGB(255, 180, 180, 180)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

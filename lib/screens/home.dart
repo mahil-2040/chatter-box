@@ -165,6 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text(
           'Messages',
           style: TextStyle(
+            // fontFamily: "Poppins",
               fontWeight: FontWeight.bold, fontSize: 28, color: Colors.white),
         ),
         actions: [

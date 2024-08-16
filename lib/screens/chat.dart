@@ -97,7 +97,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 tag: widget.groupId,
                 child: CircleAvatar(
                   radius: 18, // Reduced radius to save space
-                  backgroundColor: const Color.fromARGB(255, 41, 47, 63),
+                  backgroundColor: const Color.fromARGB(255, 122, 129, 148),
                   child: Text(
                     widget.groupName.isNotEmpty
                         ? widget.groupName[0].toUpperCase()
