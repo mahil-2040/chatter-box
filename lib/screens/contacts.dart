@@ -16,7 +16,7 @@ class ContactsScreen extends StatefulWidget {
 
 class _ContactsScreenState extends State<ContactsScreen> {
   late Future<List<Contact>> contactsFuture;
-  bool isSubmitting = false; // To track submission state
+  bool isSubmitting = false;
 
   @override
   void initState() {
@@ -80,7 +80,6 @@ class _ContactsScreenState extends State<ContactsScreen> {
       Navigator.of(context).pop(); // Navigate back to chat screen
       Navigator.of(context).pop(); // Navigate back to chat screen
     } else {
-      print("User data is null");
       setState(() {
         isSubmitting = false; // Hide loading indicator in case of error
       });
@@ -168,9 +167,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                 contact.phones!.isNotEmpty) {
                               submitContact(contact.givenName ?? 'Unknown',
                                   contact.phones!.first.value ?? 'No number');
-                            } else {
-                              print("No phone number found for this contact.");
-                            }
+                            } 
                           },
                           splashColor:
                               Colors.blue.withAlpha(30), // Splash effect color

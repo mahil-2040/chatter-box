@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../models/group.dart';
+
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -21,11 +23,13 @@ class _SearchScreenState extends State<SearchScreen> {
   User? user = FirebaseAuth.instance.currentUser;
   String userName = "";
   bool isJoined = false;
+  List<Group> groups = [];
 
   @override
   void initState() {
     super.initState();
     fetchUserData();
+    _fetchGroups();
   }
 
   // String getName(String res) {
@@ -35,6 +39,23 @@ class _SearchScreenState extends State<SearchScreen> {
   // String getId(String res) {
   //   return res.substring(0, res.indexOf("_"));
   // }
+
+  Future<void> _fetchGroups() async {
+    try {
+      QuerySnapshot snapshot =
+          await FirebaseFirestore.instance.collection('groups').get();
+
+      List<Group> fetchedGroups = snapshot.docs.map((doc) {
+        return Group.fromDocument(doc);
+      }).toList();
+
+      setState(() {
+        groups = fetchedGroups;
+      });
+    } catch (e) {
+      throw ('Error fetching groups: $e');
+    }
+  }
 
   Future<Map<String, dynamic>?> getUserData(String uid) async {
     DocumentSnapshot userDoc =
@@ -79,7 +100,7 @@ class _SearchScreenState extends State<SearchScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(30),
-                  color: const Color.fromARGB(255, 41, 47, 63),
+                color: const Color.fromARGB(255, 41, 47, 63),
               ),
               child: Row(
                 children: [
@@ -202,8 +223,7 @@ class _SearchScreenState extends State<SearchScreen> {
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       if (!groups.contains(groupId)) {
         if (groupdocumentSnapshot['admin'] == null) {
-          transaction.update(
-              groupDocumentReference, {'admin': user!.uid});
+          transaction.update(groupDocumentReference, {'admin': user!.uid});
         }
         transaction.update(userDocumentReference, {
           'groups': FieldValue.arrayUnion([groupId]),
@@ -232,17 +252,19 @@ class _SearchScreenState extends State<SearchScreen> {
       ..hideCurrentSnackBar()
       ..showSnackBar(snackBar);
   }
-  getAdminName(String id) async {
-    DocumentSnapshot userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(id)
-        .get();
-    return userDoc['admin'] as String;
-    
+
+  Future<String> getAdminName(String id) async {
+    DocumentSnapshot userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(id).get();
+    return userDoc['user_name'];
   }
 
   Widget groupTile(
-      String userName, String groupName, String groupId, String? admin) {
+    String userName,
+    String groupName,
+    String groupId,
+    String? admin,
+  ) {
     return FutureBuilder<bool>(
       future: isUserJoined(userName, groupName, groupId),
       builder: (context, snapshot) {
@@ -278,11 +300,41 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           title: Text(
             groupName,
-            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, color: Colors.white),
           ),
           subtitle: admin == null || admin.isEmpty
-              ? const Text('No members in the group', style: TextStyle(color: Color.fromARGB(255, 179, 185, 201)),)
-              : Text('Admin: ${getAdminName(admin)}', style: const TextStyle(color: Color.fromARGB(255, 179, 185, 201))),
+              ? const Text(
+                  'No members in the group',
+                  style: TextStyle(color: Color.fromARGB(255, 179, 185, 201)),
+                )
+              : FutureBuilder<String>(
+                  future: getAdminName(admin),
+                  builder: (context, adminSnapshot) {
+                    if (adminSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Text(
+                        'Loading admin name...',
+                        style: TextStyle(
+                            color: Color.fromARGB(255, 179, 185, 201)),
+                      );
+                    }
+
+                    if (adminSnapshot.hasError) {
+                      return const Text(
+                        'Error loading admin name',
+                        style: TextStyle(
+                            color: Color.fromARGB(255, 179, 185, 201)),
+                      );
+                    }
+
+                    return Text(
+                      'Admin: ${adminSnapshot.data}',
+                      style: const TextStyle(
+                          color: Color.fromARGB(255, 179, 185, 201)),
+                    );
+                  },
+                ),
           trailing: isJoined
               ? Container(
                   padding:

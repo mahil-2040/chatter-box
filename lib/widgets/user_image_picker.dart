@@ -54,18 +54,26 @@ class _UserImagePickerState extends State<UserImagePicker> {
     }
   }
 
-  void _pickImage() async {
-    final pickedImage = await ImagePicker().pickImage(
-      source: ImageSource.camera,
-      imageQuality: 50,
-    );
+  void _pickImage(String type) async {
+    XFile? pickedImage;
+    if (type == 'camera') {
+      pickedImage = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        imageQuality: 50,
+      );
+    } else {
+      pickedImage = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 50,
+      );
+    }
 
     if (pickedImage == null) {
       return;
     }
 
     setState(() {
-      _pickedImageFile = File(pickedImage.path);
+      _pickedImageFile = File(pickedImage!.path);
     });
 
     widget.onPickImage(_pickedImageFile!);
@@ -92,19 +100,36 @@ class _UserImagePickerState extends State<UserImagePicker> {
                   : null,
             ),
             if (isLoading)
-              const CircularProgressIndicator(color: Colors.white,),
+              const CircularProgressIndicator(
+                color: Colors.white,
+              ),
           ],
         ),
-        TextButton.icon(
-          onPressed: _pickImage,
-          label: const Text(
-            'Edit Profile Picture',
-            style: TextStyle(color: Colors.white),
-          ),
-          icon: const Icon(
-            Icons.image,
-            color: Colors.white,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              onPressed: () {
+                _pickImage('gallery');
+              },
+              icon: const Icon(
+                Icons.image,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(
+              width: 5,
+            ),
+            IconButton(
+              onPressed: () {
+                _pickImage('camera');
+              },
+              icon: const Icon(
+                Icons.camera_alt,
+                color: Colors.white,
+              ),
+            ),
+          ],
         ),
       ],
     );

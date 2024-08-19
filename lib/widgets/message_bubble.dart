@@ -1,7 +1,10 @@
 import 'package:chatter_box/screens/image_screen.dart';
+import 'package:chatter_box/widgets/location_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
+import 'package:latlong2/latlong.dart';
 
 enum MessageType { text, image, voice, location, contact }
 
@@ -40,17 +43,11 @@ class MessageBubble extends StatefulWidget {
 
 class _MessageBubbleState extends State<MessageBubble> {
   String getMessageTime(Timestamp time) {
-    String formattedTime =
-        '${DateFormat('d MMMM yyyy \'at\' HH:mm:ss').format(DateTime.now())} UTC+5:30';
-    DateFormat inputFormat = DateFormat("d MMMM yyyy 'at' HH:mm:ss 'UTC+5:30'");
-    DateTime dateTime = inputFormat.parse(formattedTime);
+  DateTime dateTimeUtc = time.toDate();
+  String formattedTime = DateFormat.jm().format(dateTimeUtc);
 
-    DateTime istTime = dateTime;
-
-    String currentTime = DateFormat.jm().format(istTime);
-
-    return currentTime;
-  }
+  return formattedTime;
+}
 
   @override
   Widget build(BuildContext context) {
@@ -134,6 +131,8 @@ class _MessageBubbleState extends State<MessageBubble> {
         return imageMessage(message);
       case 'contact':
         return contactMessage(message);
+      case 'location':
+        return locationMessage(message);
       default:
         return textMessage(message);
     }
@@ -159,8 +158,7 @@ class _MessageBubbleState extends State<MessageBubble> {
         const SizedBox(height: 4),
         Text(
           getMessageTime(widget.time),
-          style: const TextStyle(
-              fontSize: 12, color: Color.fromARGB(255, 180, 180, 180)),
+          style: const TextStyle(fontSize: 12, color: Colors.white),
         ),
       ],
     );
@@ -192,6 +190,8 @@ class _MessageBubbleState extends State<MessageBubble> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
+                  height: 350,
+                  width: double.infinity,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -214,6 +214,89 @@ class _MessageBubbleState extends State<MessageBubble> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget locationMessage(String latlng) {
+    List<String> locationDetails = latlng.split('_');
+    double lat = double.parse(locationDetails[0].trim());
+    double lng = double.parse(locationDetails[1].trim());
+
+    return Padding(
+      padding: const EdgeInsets.all(1),
+      child: Column(
+        crossAxisAlignment:
+            widget.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          if (widget.username != null)
+            Text(
+              textAlign: widget.isMe ? TextAlign.right : TextAlign.left,
+              widget.username!,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 16),
+            ),
+          if (widget.username != null)
+            const SizedBox(
+              height: 3,
+            ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              height: 300,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: LatLng(lat, lng),
+                  initialZoom: 15,
+                  onTap: (tapPosition, point) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (ctx) => LocationPicker(
+                          lat: lat,
+                          lng: lng,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.example.chatter_box',
+                  ),
+                  MarkerLayer(markers: [
+                    Marker(
+                      point: LatLng(lat, lng),
+                      width: 30,
+                      height: 30,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.location_pin,
+                        size: 30,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ])
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: Text(
+              getMessageTime(widget.time),
+              style: const TextStyle(fontSize: 12, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -255,9 +338,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                   alignment: Alignment.bottomRight,
                   child: Text(
                     getMessageTime(widget.time),
-                    style: const TextStyle(
-                        fontSize: 12,
-                        color: Color.fromARGB(255, 180, 180, 180)),
+                    style: const TextStyle(fontSize: 12, color: Colors.white),
                   ),
                 ),
               ],

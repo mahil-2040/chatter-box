@@ -193,7 +193,6 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     }
     setState(() {
       _selectedGroupImage = File(pickedImage.path);
-      print(_selectedGroupImage);
     });
   }
 
