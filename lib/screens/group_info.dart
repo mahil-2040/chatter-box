@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:chatter_box/screens/home.dart';
+import 'package:chatter_box/screens/image_preview.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -118,14 +119,6 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     }
   }
 
-  // String getName(String res) {
-  //   return res.substring(res.indexOf('_') + 1);
-  // }
-
-  // String getId(String res) {
-  //   return res.substring(0, res.indexOf("_"));
-  // }
-
   Future leaveGroup(String userName, String groupName, String groupId) async {
     if (user == null) {
       throw Exception("No user is signed in");
@@ -183,22 +176,66 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     }
   }
 
-  void _pickImage(String type) async {
-    final pickedImage = await ImagePicker().pickImage(
-      source: type == 'camera' ? ImageSource.camera : ImageSource.gallery,
-      imageQuality: 50,
-    );
+  void _imagePicker(String type) async {
+    final ImagePicker picker = ImagePicker();
+    XFile? pickedImage;
+
+    if (type == 'Camera') {
+      pickedImage = await picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 50,
+      );
+    } else if (type == 'Gallery') {
+      pickedImage = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 50,
+      );
+    }
+
     if (pickedImage == null) {
       return;
     }
-    setState(() {
-      _selectedGroupImage = File(pickedImage.path);
-    });
+
+    // Navigate to the image preview screen
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ImagePreviewScreen(
+          imageFile: File(pickedImage!.path),
+          onSend: () async {
+            Navigator.of(context).pop();
+            try {
+              final storageRef = FirebaseStorage.instance
+                  .ref()
+                  .child('group_images')
+                  .child('${widget.groupId}.jpg');
+
+              // Upload the image file
+              await storageRef.putFile(File(pickedImage!.path));
+
+              // Retrieve the image URL
+              groupImage = await storageRef.getDownloadURL();
+
+              setState(() {
+                _selectedGroupImage = File(pickedImage!.path);
+              });
+              _saveGroupIcon();
+            } catch (e) {
+              // Handle any errors that occur during upload
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Failed to upload image. Please try again.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        ),
+      ),
+    );
   }
 
   void _saveGroupIcon() async {
     try {
-      // Show a loading indicator
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -208,32 +245,30 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
       );
 
       if (_selectedGroupImage != null) {
-        // print('got inside if statement');
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('group_images')
-            .child('${widget.groupId}.jpg');
-
-        await storageRef.putFile(_selectedGroupImage!);
-        final imageUrl = await storageRef.getDownloadURL();
-        // print('Image uploaded successfully: $imageUrl');
         await FirebaseFirestore.instance
             .collection('groups')
             .doc(widget.groupId)
             .update({
-          'groupIcon': imageUrl,
+          'groupIcon': groupImage,
         });
+
+        setState(() {
+          fetchGroupData();
+        });
+
+        Navigator.of(context).pop(); // Close the progress indicator dialog
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Group icon updated successfully')),
+        );
+      } else {
+        Navigator.of(context).pop(); // Close the progress indicator dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No image selected.')),
+        );
       }
-
-      setState(() {
-        fetchGroupData();
-      });
-
-      // print('Image fetched successfully:');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Group icon updated successfully')),
-      );
     } catch (error) {
+      Navigator.of(context).pop(); // Close the progress indicator dialog
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to update group icon: $error')),
       );
@@ -286,7 +321,8 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                               color: Colors.black,
                             ),
                             onPressed: () {
-                              _pickImage('camera');
+                              Navigator.pop(context); // Close the bottom sheet
+                              _imagePicker('Camera');
                             },
                           ),
                         ),
@@ -315,7 +351,8 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                               color: Colors.black,
                             ),
                             onPressed: () {
-                              _pickImage('gallery');
+                              Navigator.pop(context); // Close the bottom sheet
+                              _imagePicker('Gallery');
                             },
                           ),
                         ),
@@ -329,41 +366,6 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                     ),
                   ],
                 ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 18),
-                    ),
-                  ),
-                  const SizedBox(
-                    width: 20,
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _saveGroupIcon;
-                      });
-                      Navigator.pop(context);
-                    },
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 18),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
@@ -597,7 +599,10 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                               shape: BoxShape.circle,
                             ),
                             child: IconButton(
-                              icon: const Icon(Icons.camera_alt_outlined),
+                              icon: const Icon(
+                                Icons.camera_alt_outlined,
+                                color: Colors.black,
+                              ),
                               onPressed: _editPhotoSheet,
                               iconSize: 27,
                             ),

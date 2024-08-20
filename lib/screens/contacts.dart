@@ -132,7 +132,6 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                 ?.map((item) => item.value)
                                 .join(', ') ??
                             'No phone number';
-                    
                         return ListTile(
                           leading: CircleAvatar(
                             radius: 30,

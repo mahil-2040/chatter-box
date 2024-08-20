@@ -3,6 +3,7 @@ import 'package:chatter_box/screens/chat.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:searchfield/searchfield.dart';
 
 import '../models/group.dart';
 
@@ -10,9 +11,7 @@ class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
   @override
-  State<SearchScreen> createState() {
-    return _SearchScreenState();
-  }
+  State<SearchScreen> createState() => _SearchScreenState();
 }
 
 class _SearchScreenState extends State<SearchScreen> {
@@ -31,14 +30,6 @@ class _SearchScreenState extends State<SearchScreen> {
     fetchUserData();
     _fetchGroups();
   }
-
-  // String getName(String res) {
-  //   return res.substring(res.indexOf('_') + 1);
-  // }
-
-  // String getId(String res) {
-  //   return res.substring(0, res.indexOf("_"));
-  // }
 
   Future<void> _fetchGroups() async {
     try {
@@ -79,7 +70,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 27, 32, 45),
@@ -93,55 +84,65 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
-                color: const Color.fromARGB(255, 41, 47, 63),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: searchController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        hintText: 'Search Groups',
-                        hintStyle: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      initiateSearchMethod();
-                    },
-                    child: Container(
-                      height: 40,
-                      width: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(40),
-                      ),
-                      child: const Icon(
-                        Icons.search,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+        padding: const EdgeInsets.all(8.0),
+        child: SearchField<Group>(
+          maxSuggestionsInViewPort: 5,
+          itemHeight: 80,
+          hint: 'Search for groups',
+          searchStyle: const TextStyle(color: Colors.white),
+          suggestionsDecoration: SuggestionDecoration(
+            borderRadius: const BorderRadius.all(
+              Radius.circular(12),
             ),
-            isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : groupList(),
-          ],
+            color: const Color.fromARGB(255, 122, 129, 148),
+            border: Border.all(
+              color: Colors.grey.withOpacity(0.5),
+            ),
+          ),
+          suggestionItemDecoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              shape: BoxShape.rectangle,
+              color: const Color.fromARGB(255, 122, 129, 148),
+              border: Border.all(
+                  color: Colors.transparent,
+                  style: BorderStyle.solid,
+                  width: 1.0)),
+          searchInputDecoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey.withOpacity(0.2),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            hintStyle: const TextStyle(color: Colors.white),
+            focusedBorder: OutlineInputBorder(
+              borderSide: const BorderSide(
+                color: Colors.white,
+                width: 2.0,
+              ),
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            border: const OutlineInputBorder(),
+          ),
+          marginColor: const Color.fromARGB(255, 122, 129, 148),
+          suggestions: groups
+              .map((group) => SearchFieldListItem<Group>(
+                    group.name,
+                    child: GroupTiles(
+                      userName: userName,
+                      groupName: group.name,
+                      groupId: group.id,
+                      admin: group.admin,
+                      isUserJoined: isUserJoined,
+                      joinGroup: joinGroup,
+                      showErrorDialog: _showErrorDialog,
+                      parentContext: context,
+                    ),
+                  ))
+              .toList(),
         ),
       ),
     );
   }
+
 
   Future<bool> isUserJoined(
       String userName, String groupName, String groupId) async {
@@ -149,63 +150,13 @@ class _SearchScreenState extends State<SearchScreen> {
         FirebaseFirestore.instance.collection('users').doc(user!.uid);
     DocumentSnapshot documentSnapshot = await userDocumentReference.get();
 
-    List<dynamic> groups = await documentSnapshot['groups'];
+    List<dynamic> groups = documentSnapshot['groups'];
 
-    if (groups.contains(groupId)) {
-      return true;
-    } else {
-      return false;
-    }
+    return groups.contains(groupId);
   }
 
-  joinedOrNot(String userName, String groupName, String groupId) async {
-    await isUserJoined(userName, groupName, groupId).then((val) {
-      setState(() {
-        isJoined = val;
-      });
-    });
-  }
-
-  initiateSearchMethod() async {
-    if (searchController.text.isNotEmpty) {
-      setState(() {
-        isLoading = true;
-      });
-      await searchByName(searchController.text).then((snapshot) {
-        setState(() {
-          searchSnapshot = snapshot;
-          isLoading = false;
-          hasUserSearched = true;
-        });
-      });
-    }
-  }
-
-  searchByName(String groupName) {
-    return FirebaseFirestore.instance
-        .collection('groups')
-        .where('groupName', isEqualTo: groupName)
-        .get();
-  }
-
-  groupList() {
-    return hasUserSearched
-        ? ListView.builder(
-            shrinkWrap: true,
-            itemCount: searchSnapshot!.docs.length,
-            itemBuilder: (context, index) {
-              return groupTile(
-                userName,
-                searchSnapshot!.docs[index]['groupName'],
-                searchSnapshot!.docs[index]['groupId'],
-                searchSnapshot!.docs[index]['admin'],
-              );
-            },
-          )
-        : Container();
-  }
-
-  Future joinGroup(String userName, String groupName, String groupId) async {
+  Future<void> joinGroup(
+      String userName, String groupName, String groupId) async {
     if (user == null) {
       throw Exception("No user is signed in");
     }
@@ -258,13 +209,32 @@ class _SearchScreenState extends State<SearchScreen> {
         await FirebaseFirestore.instance.collection('users').doc(id).get();
     return userDoc['user_name'];
   }
+}
 
-  Widget groupTile(
-    String userName,
-    String groupName,
-    String groupId,
-    String? admin,
-  ) {
+class GroupTiles extends StatelessWidget {
+  final String userName;
+  final String groupName;
+  final String groupId;
+  final String? admin;
+  final Future<bool> Function(String, String, String) isUserJoined;
+  final Future<void> Function(String, String, String) joinGroup;
+  final void Function(String, String, Color) showErrorDialog;
+  final BuildContext parentContext;
+
+  const GroupTiles({
+    super.key,
+    required this.userName,
+    required this.groupName,
+    required this.groupId,
+    required this.admin,
+    required this.isUserJoined,
+    required this.joinGroup,
+    required this.showErrorDialog,
+    required this.parentContext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return FutureBuilder<bool>(
       future: isUserJoined(userName, groupName, groupId),
       builder: (context, snapshot) {
@@ -273,15 +243,12 @@ class _SearchScreenState extends State<SearchScreen> {
             title: Text('Loading...'),
           );
         }
-
         if (snapshot.hasError) {
           return const ListTile(
             title: Text('Error loading group'),
           );
         }
-
         bool isJoined = snapshot.data ?? false;
-
         return ListTile(
           contentPadding:
               const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
@@ -301,15 +268,15 @@ class _SearchScreenState extends State<SearchScreen> {
           title: Text(
             groupName,
             style: const TextStyle(
-                fontWeight: FontWeight.bold, color: Colors.white),
+                fontWeight: FontWeight.bold, color: Colors.white54),
           ),
-          subtitle: admin == null || admin.isEmpty
+          subtitle: admin == null || admin!.isEmpty
               ? const Text(
                   'No members in the group',
                   style: TextStyle(color: Color.fromARGB(255, 179, 185, 201)),
                 )
               : FutureBuilder<String>(
-                  future: getAdminName(admin),
+                  future: _SearchScreenState().getAdminName(admin!),
                   builder: (context, adminSnapshot) {
                     if (adminSnapshot.connectionState ==
                         ConnectionState.waiting) {
@@ -351,36 +318,30 @@ class _SearchScreenState extends State<SearchScreen> {
               : InkWell(
                   onTap: () async {
                     await joinGroup(userName, groupName, groupId);
-                    setState(() {
-                      isJoined = !isJoined;
-                    });
-                    _showErrorDialog(
-                      'Successfully joined the group $groupName',
-                      'Joined',
-                      const Color.fromARGB(255, 3, 116, 6),
+                    showErrorDialog(
+                      'You have joined the group $groupName successfully!',
+                      'Group Joined',
+                      Colors.green,
                     );
-                    Future.delayed(const Duration(seconds: 1), () {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (ctx) => ChatScreen(
-                            groupId: groupId,
-                            groupName: groupName,
-                            userName: userName,
-                          ),
+                    Navigator.of(parentContext).push(
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          groupId: groupId,
+                          groupName: groupName,
+                          userName: userName,
                         ),
-                      );
-                    });
+                      ),
+                    );
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         vertical: 10, horizontal: 20),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white, width: 1),
                       borderRadius: BorderRadius.circular(10),
-                      color: const Color.fromARGB(255, 107, 114, 128),
+                      color: const Color.fromARGB(255, 41, 47, 63),
                     ),
                     child: const Text(
-                      'Join',
+                      'Join Now',
                       style: TextStyle(color: Colors.white),
                     ),
                   ),

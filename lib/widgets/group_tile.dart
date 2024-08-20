@@ -10,10 +10,12 @@ class GroupTile extends StatefulWidget {
     required this.lastMessage,
     required this.lastMessageSender,
     required this.lastMessageTime,
+    required this.groupImage,
   });
 
   final String userName;
   final String groupName;
+  final String groupImage;
   final String groupId;
   final String lastMessage;
   final String lastMessageSender;
@@ -26,6 +28,8 @@ class GroupTile extends StatefulWidget {
 }
 
 class _GroupTileState extends State<GroupTile> {
+
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -46,7 +50,8 @@ class _GroupTileState extends State<GroupTile> {
           leading: CircleAvatar(
             radius: 30,
             backgroundColor: const Color.fromARGB(255, 27, 32, 45),
-            child: Text(
+            foregroundImage: widget.groupImage != "" ? NetworkImage(widget.groupImage) : null,
+            child: widget.groupImage == "" ? Text(
               widget.groupName[0].toUpperCase(),
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -54,7 +59,7 @@ class _GroupTileState extends State<GroupTile> {
                 fontWeight: FontWeight.bold,
                 fontSize: 22,
               ),
-            ),
+            ) : null,
           ),
           title: Row(
             children: [
@@ -76,7 +81,7 @@ class _GroupTileState extends State<GroupTile> {
             maxLines: 1, // Set the maximum number of lines to display
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-                fontSize: 13, color: Color.fromARGB(255, 179, 185, 201)),
+                fontSize: 16, color: Color.fromARGB(255, 179, 185, 201)),
           ),
         ),
       ),

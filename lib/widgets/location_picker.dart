@@ -16,14 +16,19 @@ class LocationPicker extends StatelessWidget {
         title: const Text(
           'Current Location',
           style: TextStyle(
-            // fontFamily: "Poppins",
-            fontWeight: FontWeight.bold, fontSize: 28, color: Colors.white),
+              // fontFamily: "Poppins",
+              fontWeight: FontWeight.bold,
+              fontSize: 28,
+              color: Colors.white),
         ),
       ),
       body: FlutterMap(
         options: MapOptions(
+          maxZoom: 50,
+          minZoom: 5,
           initialCenter: LatLng(lat!, lng!),
           initialZoom: 15,
+          interactionOptions: const InteractionOptions(pinchZoomThreshold: 5.0)
         ),
         children: [
           TileLayer(

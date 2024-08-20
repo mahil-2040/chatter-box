@@ -73,7 +73,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             ),
           ),
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 46),
+          margin: const EdgeInsets.symmetric(horizontal: 33), 
           child: Row(
             mainAxisAlignment:
                 widget.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,

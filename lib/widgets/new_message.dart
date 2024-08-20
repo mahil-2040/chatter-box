@@ -157,7 +157,7 @@ class _NewMessageState extends State<NewMessage> {
         throw "Location permission is permanently denied.";
       }
 
-      Position position = await Geolocator.getCurrentPosition();
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       _updateLocation(position);
       _listenToLocationUpdates();
       setState(() {
@@ -208,7 +208,7 @@ class _NewMessageState extends State<NewMessage> {
         builder: (context) => ImagePreviewScreen(
           imageFile: File(pickedImage!.path),
           onSend: () async {
-            Navigator.of(context).pop(); // Close the preview screen
+            Navigator.of(context).pop();
             try {
               final storageRef = FirebaseStorage.instance
                   .ref()

@@ -18,14 +18,12 @@ class _ChatMessageState extends State<ChatMessage> {
   @override
   void initState() {
     super.initState();
-    // Ensure that we scroll to the bottom when messages are first loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
   }
 
   void _scrollToBottom() {
-    // Check if the scroll controller is attached before scrolling
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,

@@ -25,20 +25,16 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   String admin = "";
   Stream<QuerySnapshot>? chats;
+  String groupImage = "";
 
   @override
   void initState() {
     super.initState();
     getChatandAdmin();
+    fetchGroupData();
   }
 
   getChatandAdmin() {
-    // getChats(widget.groupId).then((val) {
-    //   setState(() {
-    //     chats = val;
-    //   });
-    // });
-
     getGroupAdmin(widget.groupId).then((val) {
       setState(() {
         admin = val;
@@ -46,14 +42,26 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  // getChats(String groupId) async {
-  //   return FirebaseFirestore.instance
-  //       .collection('groups')
-  //       .doc(groupId)
-  //       .collection('messages')
-  //       .orderBy('time')
-  //       .snapshots();
-  // }
+  Future<Map<String, dynamic>?> getGropData(String groupid) async {
+    DocumentSnapshot groupDoc = await FirebaseFirestore.instance
+        .collection('groups')
+        .doc(groupid)
+        .get();
+
+    if (groupDoc.exists) {
+      return groupDoc.data() as Map<String, dynamic>?;
+    }
+    return null;
+  }
+
+  void fetchGroupData() async {
+    Map<String, dynamic>? groupData = await getGropData(widget.groupId);
+    if (groupData != null) {
+      setState(() {
+        groupImage = groupData['groupIcon'] ?? "";
+      });
+    }
+  }
 
   Future getGroupAdmin(String groupId) async {
     DocumentReference d =
@@ -96,9 +104,10 @@ class _ChatScreenState extends State<ChatScreen> {
               Hero(
                 tag: widget.groupId,
                 child: CircleAvatar(
-                  radius: 18, // Reduced radius to save space
+                  radius: 18, 
                   backgroundColor: const Color.fromARGB(255, 122, 129, 148),
-                  child: Text(
+                  foregroundImage: groupImage != "" ? NetworkImage(groupImage) : null,
+                  child: groupImage == "" ? Text(
                     widget.groupName.isNotEmpty
                         ? widget.groupName[0].toUpperCase()
                         : '',
@@ -108,7 +117,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       fontWeight: FontWeight.bold,
                       fontSize: 16, // Reduce the font size to fit better
                     ),
-                  ),
+                  ) : null ,
                 ),
               ),
               const SizedBox(

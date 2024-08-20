@@ -29,14 +29,6 @@ class _HomeScreenState extends State<HomeScreen> {
     fetchUserData();
   }
 
-  // String getId(String res) {
-  //   return res.substring(0, res.indexOf('_'));
-  // }
-
-  // String getName(String res) {
-  //   return res.substring(res.indexOf('_') + 1);
-  // }
-
   Future<Map<String, dynamic>?> getUserData(String uid) async {
     DocumentSnapshot userDoc =
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
@@ -57,6 +49,15 @@ class _HomeScreenState extends State<HomeScreen> {
       return userDoc.data() as Map<String, dynamic>?;
     }
     return null;
+  }
+
+  Future<String> getGroupImages(String groupId) async {
+    Map<String, dynamic>? groupData = await getGroupData(groupId);
+    if (groupData != null) {
+      return groupData['groupIcon'] as String;
+    }
+
+    return "";
   }
 
   Future<String> getLastMessage(String groupId) async {
@@ -151,8 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
         FirebaseFirestore.instance.collection('users').doc(user!.uid);
 
     return await userDocumentReference.update({
-      'groups':
-          FieldValue.arrayUnion([(groupDocumentReference.id)])
+      'groups': FieldValue.arrayUnion([(groupDocumentReference.id)])
     });
   }
 
@@ -165,8 +165,10 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text(
           'Messages',
           style: TextStyle(
-            // fontFamily: "Poppins",
-              fontWeight: FontWeight.bold, fontSize: 28, color: Colors.white),
+              // fontFamily: "Poppins",
+              fontWeight: FontWeight.bold,
+              fontSize: 28,
+              color: Colors.white),
         ),
         actions: [
           IconButton(
@@ -305,10 +307,10 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () {
           popUpDialog(context);
         },
-        backgroundColor: const Color.fromARGB(255, 27, 32, 45),
+        backgroundColor: const Color.fromARGB(255, 147, 152, 167),
         child: const Icon(
           Icons.add,
-          color: Colors.white,
+          color: Colors.black,
           size: 30,
         ),
       ),
@@ -440,15 +442,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (context, index) {
                     int reverseIndex =
                         snapshot.data['groups'].length - index - 1;
-                    String groupId =
-                        snapshot.data['groups'][reverseIndex];
-                    
+                    String groupId = snapshot.data['groups'][reverseIndex];
+
                     return FutureBuilder(
                       future: Future.wait([
                         getLastMessage(groupId),
                         getLastMessageSender(groupId),
                         getLastMessageTime(groupId),
                         getGroupNames(groupId),
+                        getGroupImages(groupId),
                       ]),
                       builder: (context,
                           AsyncSnapshot<List<String>> futureSnapshot) {
@@ -466,7 +468,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         String lastMessageSender = futureSnapshot.data![1];
                         String lastMessageTime = futureSnapshot.data![2];
                         String groupName = futureSnapshot.data![3];
-                        
+                        String groupImage = futureSnapshot.data![4];
+
                         return GroupTile(
                           groupId: groupId,
                           groupName: groupName,
@@ -474,6 +477,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           lastMessage: lastMessage,
                           lastMessageSender: lastMessageSender,
                           lastMessageTime: lastMessageTime,
+                          groupImage: groupImage,
                         );
                       },
                     );
@@ -520,6 +524,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const Text(
             'You have not joined any group yet, tap on add icon to create a group or search from top search button',
             textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white),
           ),
         ],
       ),
