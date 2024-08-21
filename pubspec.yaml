@@ -59,11 +59,13 @@ flutter_native_splash:
   color_dark: "#1B202D"
   image: assets/images/transparent-logo.png
   image_dark: assets/images/transparent-logo.png
+  image_scale: 2.0
   android_12:
     color: "#1B202D"
     color_dark: "#1B202D"
     image: assets/images/transparent-logo.png
     image_dark: assets/images/transparent-logo.png
+    image_scale: 2.0
     icon_background_color: "#1B202D"
     icon_background_color_dark: "#1B202D"
 

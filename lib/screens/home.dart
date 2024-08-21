@@ -133,6 +133,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future createGroup(String userName, String id, String groupName) async {
+  setState(() {
+    _isLoading = true; 
+  });
+  
+  try {
     DocumentReference groupDocumentReference =
         await FirebaseFirestore.instance.collection('groups').add({
       'groupName': groupName,
@@ -145,17 +150,26 @@ class _HomeScreenState extends State<HomeScreen> {
       'recentMessageTime':
           '${DateFormat('d MMMM yyyy \'at\' HH:mm:ss').format(DateTime.now())} UTC+5:30',
     });
+    
     await groupDocumentReference.update({
       'members': FieldValue.arrayUnion([(user!.uid)]),
       'groupId': groupDocumentReference.id,
     });
+
     DocumentReference userDocumentReference =
         FirebaseFirestore.instance.collection('users').doc(user!.uid);
 
-    return await userDocumentReference.update({
+    await userDocumentReference.update({
       'groups': FieldValue.arrayUnion([(groupDocumentReference.id)])
     });
+
+  } finally {
+    setState(() {
+      _isLoading = false;
+    });
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -424,95 +438,106 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   groupList() {
-    return StreamBuilder(
-      stream: groups,
-      builder: (context, AsyncSnapshot snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: SpinKitWaveSpinner(
-              color: Color.fromARGB(
-                  255, 107, 114, 128), // Adjust the color as needed
-              size: 50.0, // Adjust the size as needed
-            ),
-          );
-        }
+  return StreamBuilder(
+    stream: groups,
+    builder: (context, AsyncSnapshot snapshot) {
+      if (_isLoading) {
+        return const Center(
+          child: SpinKitWaveSpinner(
+            waveColor: Color.fromARGB(255, 97, 166, 223),
+            color: Color.fromARGB(255, 66, 149, 216),
+            size: 80, // Adjust the size as needed
+          ),
+        );
+      }
 
-        if (snapshot.hasData) {
-          if (snapshot.data['groups'] != null) {
-            if (snapshot.data['groups'].length != 0) {
-              return Container(
-                margin: const EdgeInsets.only(top: 30),
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30)),
-                  color: Color.fromARGB(255, 41, 47, 63),
-                ),
-                child: ListView.builder(
-                  itemCount: snapshot.data['groups'].length,
-                  itemBuilder: (context, index) {
-                    int reverseIndex =
-                        snapshot.data['groups'].length - index - 1;
-                    String groupId = snapshot.data['groups'][reverseIndex];
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(
+          child: SpinKitWaveSpinner(
+            waveColor: Color.fromARGB(255, 97, 166, 223),
+            color: Color.fromARGB(255, 66, 149, 216),
+            size: 80.0, // Adjust the size as needed
+          ),
+        );
+      }
 
-                    return FutureBuilder(
-                      future: Future.wait([
-                        getLastMessage(groupId),
-                        getLastMessageSender(groupId),
-                        getLastMessageTime(groupId),
-                        getGroupNames(groupId),
-                        getGroupImages(groupId),
-                      ]),
-                      builder: (context,
-                          AsyncSnapshot<List<String>> futureSnapshot) {
-                        if (futureSnapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center();
-                        }
-                        if (futureSnapshot.hasError) {
-                          return const Center(
-                            child: Text("Error loading messages"),
-                          );
-                        }
+      if (snapshot.hasData) {
+        if (snapshot.data['groups'] != null) {
+          if (snapshot.data['groups'].length != 0) {
+            return Container(
+              margin: const EdgeInsets.only(top: 30),
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30)),
+                color: Color.fromARGB(255, 41, 47, 63),
+              ),
+              child: ListView.builder(
+                itemCount: snapshot.data['groups'].length,
+                itemBuilder: (context, index) {
+                  int reverseIndex =
+                      snapshot.data['groups'].length - index - 1;
+                  String groupId = snapshot.data['groups'][reverseIndex];
 
-                        String lastMessage = futureSnapshot.data![0];
-                        String lastMessageSender = futureSnapshot.data![1];
-                        String lastMessageTime = futureSnapshot.data![2];
-                        String groupName = futureSnapshot.data![3];
-                        String groupImage = futureSnapshot.data![4];
-
-                        return GroupTile(
-                          groupId: groupId,
-                          groupName: groupName,
-                          userName: username,
-                          lastMessage: lastMessage,
-                          lastMessageSender: lastMessageSender,
-                          lastMessageTime: lastMessageTime,
-                          groupImage: groupImage,
+                  return FutureBuilder(
+                    future: Future.wait([
+                      getLastMessage(groupId),
+                      getLastMessageSender(groupId),
+                      getLastMessageTime(groupId),
+                      getGroupNames(groupId),
+                      getGroupImages(groupId),
+                    ]),
+                    builder: (context,
+                        AsyncSnapshot<List<String>> futureSnapshot) {
+                      if (futureSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return const Center();
+                      }
+                      if (futureSnapshot.hasError) {
+                        return const Center(
+                          child: Text("Error loading messages"),
                         );
-                      },
-                    );
-                  },
-                ),
-              );
-            } else {
-              return noGroupWidget();
-            }
+                      }
+
+                      String lastMessage = futureSnapshot.data![0];
+                      String lastMessageSender = futureSnapshot.data![1];
+                      String lastMessageTime = futureSnapshot.data![2];
+                      String groupName = futureSnapshot.data![3];
+                      String groupImage = futureSnapshot.data![4];
+
+                      return GroupTile(
+                        groupId: groupId,
+                        groupName: groupName,
+                        userName: username,
+                        lastMessage: lastMessage,
+                        lastMessageSender: lastMessageSender,
+                        lastMessageTime: lastMessageTime,
+                        groupImage: groupImage,
+                      );
+                    },
+                  );
+                },
+              ),
+            );
           } else {
             return noGroupWidget();
           }
         } else {
-          return const Center(
-            child: SpinKitWaveSpinner(
-              waveColor: Color.fromARGB(255, 97, 166, 223),
-              color: Color.fromARGB(255, 66, 149, 216),
-              size: 80, // Adjust the size as needed
-            ),
-          );
+          return noGroupWidget();
         }
-      },
-    );
-  }
+      } else {
+        return const Center(
+          child: SpinKitWaveSpinner(
+            waveColor: Color.fromARGB(255, 97, 166, 223),
+            color: Color.fromARGB(255, 66, 149, 216),
+            size: 80, // Adjust the size as needed
+          ),
+        );
+      }
+    },
+  );
+}
+
 
   noGroupWidget() {
     return Container(
