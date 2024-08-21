@@ -20,7 +20,7 @@ class ImagePreviewScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.send),
+            icon: const Icon(Icons.check),
             onPressed: onSend,
           ),
         ],

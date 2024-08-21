@@ -1,11 +1,13 @@
 import 'dart:io';
 
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:chatter_box/screens/home.dart';
 import 'package:chatter_box/screens/image_preview.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:image_picker/image_picker.dart';
 
 class GroupInfoScreen extends StatefulWidget {
@@ -160,6 +162,24 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     });
   }
 
+  void _showErrorDialog(String message, String title, Color color) {
+    final snackBar = SnackBar(
+      elevation: 0,
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: Colors.transparent,
+      content: AwesomeSnackbarContent(
+        color: color,
+        title: title,
+        message: message,
+        contentType: ContentType.failure,
+      ),
+    );
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snackBar);
+  }
+  
   void _saveGroupName() async {
     if (_groupnameController.text.isNotEmpty &&
         _groupnameController.text != "") {
@@ -196,13 +216,29 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
       return;
     }
 
+    // Show the loading indicator immediately after selecting the image
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: SpinKitWaveSpinner(
+            waveColor:  Color.fromARGB(255, 97, 166, 223),
+            color:  Color.fromARGB(255, 66, 149, 216),// Adjust the color as needed
+            size: 80, // Adjust the size as needed
+          ),
+        );
+      },
+    );
+
     // Navigate to the image preview screen
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ImagePreviewScreen(
           imageFile: File(pickedImage!.path),
           onSend: () async {
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(); // Close the preview screen
+
             try {
               final storageRef = FirebaseStorage.instance
                   .ref()
@@ -220,6 +256,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
               });
               _saveGroupIcon();
             } catch (e) {
+              Navigator.of(context).pop(); // Close the loading indicator dialog
               // Handle any errors that occur during upload
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -236,14 +273,6 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
 
   void _saveGroupIcon() async {
     try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return const Center(child: CircularProgressIndicator());
-        },
-      );
-
       if (_selectedGroupImage != null) {
         await FirebaseFirestore.instance
             .collection('groups')
@@ -256,19 +285,16 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
           fetchGroupData();
         });
 
-        Navigator.of(context).pop(); // Close the progress indicator dialog
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Group icon updated successfully')),
-        );
+        Navigator.of(context).pop();
+        _showErrorDialog('Group icon updated successfully', 'Updated', Colors.green);
       } else {
-        Navigator.of(context).pop(); // Close the progress indicator dialog
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No image selected.')),
         );
       }
     } catch (error) {
-      Navigator.of(context).pop(); // Close the progress indicator dialog
+      Navigator.of(context).pop(); 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to update group icon: $error')),
       );
@@ -692,9 +718,11 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
       stream: members,
       builder: (context, AsyncSnapshot snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(
-              color: Theme.of(context).primaryColor,
+          return const Center(
+            child: SpinKitWaveSpinner(
+              color: Color.fromARGB(
+                  255, 107, 114, 128), // Adjust the color as needed
+              size: 80, // Adjust the size as needed
             ),
           );
         }

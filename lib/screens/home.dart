@@ -5,6 +5,7 @@ import 'package:chatter_box/widgets/group_tile.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -426,6 +427,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return StreamBuilder(
       stream: groups,
       builder: (context, AsyncSnapshot snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: SpinKitWaveSpinner(
+              color: Color.fromARGB(
+                  255, 107, 114, 128), // Adjust the color as needed
+              size: 50.0, // Adjust the size as needed
+            ),
+          );
+        }
+
         if (snapshot.hasData) {
           if (snapshot.data['groups'] != null) {
             if (snapshot.data['groups'].length != 0) {
@@ -492,8 +503,10 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         } else {
           return const Center(
-            child: CircularProgressIndicator(
-              color: Color.fromARGB(255, 107, 114, 128),
+            child: SpinKitWaveSpinner(
+              waveColor: Color.fromARGB(255, 97, 166, 223),
+              color: Color.fromARGB(255, 66, 149, 216),
+              size: 80, // Adjust the size as needed
             ),
           );
         }

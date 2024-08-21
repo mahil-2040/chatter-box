@@ -1,10 +1,12 @@
 import 'dart:io';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:chatter_box/screens/home.dart';
 import 'package:chatter_box/widgets/user_image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -53,6 +55,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _showErrorDialog(String message, String title, Color color) {
+    final snackBar = SnackBar(
+      elevation: 0,
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: Colors.transparent,
+      content: AwesomeSnackbarContent(
+        color: color,
+        title: title,
+        message: message,
+        contentType: ContentType.failure,
+      ),
+    );
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snackBar);
+  }
   void _pickImage(File pickedImage) {
     setState(() {
       _selectedImage = pickedImage;
@@ -62,12 +81,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _submitProfile() async {
     if (_formKey.currentState!.validate()) {
       try {
-        // Show a loading indicator
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (BuildContext context) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: SpinKitWaveSpinner(
+                waveColor: Color.fromARGB(255, 97, 166, 223),
+                color: Color.fromARGB(255, 66, 149, 216),
+                size: 80, // Adjust the size as needed
+              ),
+            );
           },
         );
 
@@ -106,14 +130,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Navigator.pop(context);
         Navigator.pop(context);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully')),
-        );
+        _showErrorDialog('Profile updated successfully', 'Updated', Colors.green);
       } catch (error) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update profile: $error')),
-        );
+        _showErrorDialog('Failed to update profile: $error', 'Error', Colors.red);
       }
     }
   }
