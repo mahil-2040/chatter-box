@@ -18,6 +18,7 @@ Chatter Box is a group chat application built using Flutter and Firebase. It pro
   - Update profile picture.
   - Edit username.
 - **Search Suggestions**: Search for groups with real-time suggestions.
+- **Gemini Chatbot**: Integrated Gemini chatbot for AI-driven interactions within group chats.
 - **UI Enhancements**: Responsive design with smooth transitions and loading indicators.
 
 ## Technologies Used
@@ -30,5 +31,4 @@ Chatter Box is a group chat application built using Flutter and Firebase. It pro
 - **Flutter Map**: For location sharing and displaying interactive maps.
 - **Flutter Spinkit**: For loading spinners and animations.
 - **Awesome Snackbar Content**: For enhanced snackbars with custom styling.
-
-
+- **Gemini API**: For integrating the AI-driven chatbot into the chat experience.
