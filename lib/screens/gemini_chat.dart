@@ -337,28 +337,6 @@ class _NewPromptState extends State<NewPrompt> {
     }
   }
 
-  // void _sendMediaMessage() async {
-  //   ImagePicker picker = ImagePicker();
-  //   XFile? file = await picker.pickImage(
-  //     source: ImageSource.gallery,
-  //   );
-
-  //   final user = FirebaseAuth.instance.currentUser!;
-
-  //   if (file != null) {
-  //     FirebaseFirestore.instance
-  //         .collection('users')
-  //         .doc(user.uid)
-  //         .collection('geminiMessages')
-  //         .add({
-  //       'text': ,
-  //       'createdAt': Timestamp.now(),
-  //       'messageType': 'text',
-  //       'isMe': true,
-  //     });
-  //   }
-  // }
-
   void _imagePicker(String type) async {
     final ImagePicker picker = ImagePicker();
     XFile? pickedImage;

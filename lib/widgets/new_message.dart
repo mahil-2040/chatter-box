@@ -75,6 +75,7 @@ class _NewMessageState extends State<NewMessage> {
     });
 
     FirebaseFirestore.instance.collection('groups').doc(widget.groupId).update({
+      'recentMessageSender' : userData.data()!['user_name'],
       'recentMessage': getmessagetype(enteredMessage, messageType),
       'recentMessageTime':
           '${DateFormat('d MMMM yyyy \'at\' HH:mm:ss').format(DateTime.now())} UTC+5:30',
