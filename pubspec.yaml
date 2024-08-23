@@ -53,6 +53,7 @@ dependencies:
   screenshot: ^3.0.0
   latlong2: ^0.9.1
   searchfield: ^1.0.9
+  flutter_gemini: ^2.0.5
 
 flutter_native_splash:
   color: "#1B202D"
@@ -96,6 +97,8 @@ flutter:
       - assets/images/logo.png
       - assets/images/logo-color.png
       - assets/images/transparent-logo.png
+      - assets/images/gemini-logo.png
+      - assets/images/google-gemini-icon.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -43,11 +43,11 @@ class MessageBubble extends StatefulWidget {
 
 class _MessageBubbleState extends State<MessageBubble> {
   String getMessageTime(Timestamp time) {
-  DateTime dateTimeUtc = time.toDate();
-  String formattedTime = DateFormat.jm().format(dateTimeUtc);
+    DateTime dateTimeUtc = time.toDate();
+    String formattedTime = DateFormat.jm().format(dateTimeUtc);
 
-  return formattedTime;
-}
+    return formattedTime;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +73,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             ),
           ),
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 33), 
+          margin: const EdgeInsets.symmetric(horizontal: 33),
           child: Row(
             mainAxisAlignment:
                 widget.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,

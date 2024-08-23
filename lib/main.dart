@@ -4,10 +4,12 @@ import 'package:chatter_box/screens/spalsh.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:chatter_box/firebase_options.dart';
 
 void main() async {
+  Gemini.init(apiKey: 'AIzaSyAfyVI6kjTY-lzus2iBKMqFOOBTI-SqjTo');
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await Firebase.initializeApp(

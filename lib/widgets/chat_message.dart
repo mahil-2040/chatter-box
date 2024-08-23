@@ -67,7 +67,6 @@ class _ChatMessageState extends State<ChatMessage> {
 
         final loadedMessages = snapshots.data!.docs;
 
-        // Always scroll to the bottom whenever the message list updates
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scrollToBottom();
         });
