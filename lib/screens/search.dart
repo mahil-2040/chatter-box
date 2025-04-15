@@ -89,7 +89,7 @@ class _SearchScreenState extends State<SearchScreen> {
           maxSuggestionsInViewPort: 5,
           itemHeight: 80,
           hint: 'Search for groups',
-          searchStyle: const TextStyle(color: Colors.white),
+          // searchStyle: const TextStyle(color: Colors.white),
           suggestionsDecoration: SuggestionDecoration(
             borderRadius: const BorderRadius.all(
               Radius.circular(12),
@@ -107,7 +107,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   color: Colors.transparent,
                   style: BorderStyle.solid,
                   width: 1.0)),
-          searchInputDecoration: InputDecoration(
+          searchInputDecoration: SearchInputDecoration(
             filled: true,
             fillColor: Colors.grey.withOpacity(0.2),
             contentPadding:

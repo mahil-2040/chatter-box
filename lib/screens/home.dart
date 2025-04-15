@@ -433,12 +433,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     _isLoading = false;
                   });
                   Navigator.of(context).pop();
-                  final snackBar = SnackBar(
+                  final snackBar = const SnackBar(
                     elevation: 0,
                     behavior: SnackBarBehavior.floating,
                     backgroundColor: Colors.transparent,
                     content: AwesomeSnackbarContent(
-                      color: const Color.fromARGB(255, 3, 116, 6),
+                      color: Color.fromARGB(255, 3, 116, 6),
                       title: 'Congratulations!',
                       message: 'Group created successfully!',
                       contentType: ContentType.success,
