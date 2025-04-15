@@ -4,7 +4,7 @@ Chatter Box is a group chat application built using Flutter and Firebase. It pro
 
 ## 🎬 Chatter Box - Demo Video
 
-👉 [Download Demo Video](assets/chatterbox_demo.mp4)
+👉 [Download Demo Video](assets/demo_video.mp4)
 
 ## Features
 
