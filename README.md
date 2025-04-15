@@ -2,6 +2,10 @@
 
 Chatter Box is a group chat application built using Flutter and Firebase. It provides a comprehensive suite of features to facilitate group communication and management. The app supports real-time updates, various types of media sharing, and robust user management functionalities.
 
+## 🎬 Chatter Box - Demo Video
+
+👉 [Download Demo Video](assets/chatterbox_demo.mp4)
+
 ## Features
 
 - **Email Authentication**: Secure login and registration using email and password.
